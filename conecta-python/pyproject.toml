@@ -14,3 +14,8 @@ dynamic = ["version"]
 dependencies = []
 [tool.maturin]
 features = ["pyo3/extension-module"]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+]

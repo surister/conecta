@@ -9,4 +9,5 @@ name = "conecta"
 crate-type = ["cdylib"]
 
 [dependencies]
+conecta-core = { path = "../conecta-core", default-features = false }
 pyo3 = "0.25.0"

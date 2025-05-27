@@ -1,6 +1,6 @@
+use std::fmt::Debug;
 
-pub trait Source {
-    fn get_name(&self) -> String;
+pub trait Source: Debug {
     fn get_metadata_query(&self) -> String {
         "SELECT 1".to_string()
     }

@@ -18,6 +18,7 @@ pub trait Source: Debug {
         query: &str,
         column: Option<&str>,
         needed_metadata: NeededMetadataFromSource,
+        partition_range: &[i64],
     ) -> QueryMetadata;
 
     /// Function to let database sources to implement extra validation, most databases
@@ -29,6 +30,7 @@ pub trait Source: Debug {
         query: &str,
         column: Option<&str>,
         needed_metadata_from_source: NeededMetadataFromSource,
+        partition_range: &[i64],
     ) -> String;
 
     fn send_query(&self, query: &str) {}

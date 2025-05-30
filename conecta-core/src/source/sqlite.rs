@@ -1,5 +1,5 @@
 use crate::metadata::{NeededMetadataFromSource, QueryMetadata};
-use crate::source::source::{Metadata, Source};
+use crate::source::source::Source;
 #[derive(Debug)]
 pub struct SqliteSource {
     pub conn_string: String,
@@ -15,6 +15,7 @@ impl Source for SqliteSource {
         query: &str,
         column: Option<&str>,
         needed_metadata: NeededMetadataFromSource,
+        partition_range: &[i64],
     ) -> QueryMetadata {
         todo!()
     }
@@ -22,11 +23,13 @@ impl Source for SqliteSource {
     fn validate(&self) {
         // Implement extra validation here.
     }
+
     fn get_metadata_query(
         &self,
         query: &str,
         column: Option<&str>,
-        needed_metadata: NeededMetadataFromSource,
+        needed_metadata_from_source: NeededMetadataFromSource,
+        partition_range: &[i64],
     ) -> String {
         todo!()
     }

@@ -1,14 +1,12 @@
 use crate::metadata::NeededMetadataFromSource;
 use crate::metadata::QueryMetadata;
-use crate::source::source::{Metadata, Source};
-use log::warn;
+use crate::source::source::{Source};
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 use sqlparser::ast::{Statement, TableFactor};
-use sqlparser::dialect::{GenericDialect, PostgreSqlDialect};
+use sqlparser::dialect::{PostgreSqlDialect};
 use sqlparser::parser::Parser;
-use std::fmt::format;
-use std::thread;
-use tokio_postgres::types::IsNull::No;
+
+
 use tokio_postgres::NoTls;
 
 #[derive(Debug)]
@@ -26,14 +24,16 @@ impl Source for PostgresSource {
         query: &str,
         column: Option<&str>,
         needed_metadata: NeededMetadataFromSource,
+        partition_range: &[i64],
     ) -> QueryMetadata {
         let conn = self.get_conn_string().parse().unwrap();
         let manager = PostgresConnectionManager::new(conn, NoTls);
+        //  todo careful here, max_size will have to be the size of the total partition.
         let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
 
-        let mut client = pool.get().unwrap();
+        let mut client = pool.get().expect("Could not connect to the database");
 
-        let query = self.get_metadata_query(&query, column, needed_metadata);
+        let query = self.get_metadata_query(&query, column, needed_metadata, partition_range);
         let result = client
             .query(query.as_str(), &[])
             .expect("TODO: panic message");
@@ -43,8 +43,8 @@ impl Source for PostgresSource {
         QueryMetadata {
             query,
             count: row.get(0),
-            min_value: row.try_get(1).unwrap_or(None),
-            max_value: row.try_get(2).unwrap_or(None),
+            min_value: row.try_get(1).unwrap_or(partition_range.get(0).copied()),
+            max_value: row.try_get(2).unwrap_or(partition_range.get(1).copied()),
         }
     }
 
@@ -55,12 +55,12 @@ impl Source for PostgresSource {
         query: &str,
         column: Option<&str>,
         needed_metadata_from_source: NeededMetadataFromSource,
+        partition_range: &[i64],
     ) -> String {
+        let table_name = self.get_table_name(query);
+        let col = column.expect("Trying to get min and max metadata without specifying a column");
         match needed_metadata_from_source {
             NeededMetadataFromSource::CountAndMinMax => {
-                let table_name = self.get_table_name(query);
-                let col =
-                    column.expect("Trying to get min and max metadata without specifying a column");
                 format!(
                     "SELECT COUNT(*)::bigint, \
                         MIN({col})::bigint, \
@@ -70,7 +70,23 @@ impl Source for PostgresSource {
                     table_name = table_name
                 )
             }
-            NeededMetadataFromSource::Count => format!("SELECT COUNT(*)::bigint FROM ({query})"),
+            NeededMetadataFromSource::Count => {
+                let mut query = format!("SELECT COUNT(*)::bigint FROM ({query})");
+
+                // If partition_range is specified by the user, we add the 'where' part.
+                if !partition_range.is_empty() {
+                    query.push_str(
+                        format!(
+                            " WHERE {col} > {min} and {col} < {max}",
+                            col = col,
+                            min = partition_range[0],
+                            max = partition_range[1]
+                        )
+                        .as_str(),
+                    );
+                }
+                query
+            }
         }
     }
 

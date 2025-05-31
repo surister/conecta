@@ -1,19 +1,16 @@
-pub(crate) use crate::metadata::Metadata;
 use crate::metadata::NeededMetadataFromSource;
 use crate::metadata::QueryMetadata;
-use sqlparser::ast::Statement;
-use sqlparser::dialect::GenericDialect;
-use sqlparser::parser::Parser;
 use std::fmt::Debug;
-use std::println;
 
 pub trait Source: Debug {
     /// Getter that returns the connection_string
     fn get_conn_string(&self) -> String;
 
+    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String;
+
     /// Method that does the necessary work and returns the metadata.
     /// Every database `Source` will have to implement their own
-    fn request_metadata(
+    fn fetch_query_metadata(
         &self,
         query: &str,
         column: Option<&str>,

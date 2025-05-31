@@ -5,13 +5,13 @@ pub enum NeededMetadataFromSource {
     CountAndMinMax,
 }
 pub fn create_metadata<'a>(
-    source: Box<dyn Source>,
+    source: &Box<dyn Source>,
     queries: Vec<&'a str>,
-    partition_on: Option<&'a str>,
+    partition_column: Option<&'a str>,
     partition_range: &[i64],
     partition_num: Option<u16>,
 ) -> Metadata<'a> {
-    if (partition_num.is_some() || partition_on.is_some() || partition_range.len() > 0)
+    if (partition_num.is_some() || partition_column.is_some() || partition_range.len() > 0)
         && queries.len() > 1
     {
         panic!(
@@ -22,7 +22,7 @@ pub fn create_metadata<'a>(
         )
     }
 
-    if partition_num.is_some() && partition_on.is_none() {
+    if partition_num.is_some() && partition_column.is_none() {
         panic!(
             "You passed partition_num={}, but partition_on is None, hint: \
             pass a column name.",
@@ -30,7 +30,7 @@ pub fn create_metadata<'a>(
         )
     }
 
-    if !partition_range.is_empty() && partition_on.is_none() {
+    if !partition_range.is_empty() && partition_column.is_none() {
         panic!("You passed a partition_range but did not specified a partition_on.")
     }
 
@@ -48,19 +48,24 @@ pub fn create_metadata<'a>(
         .into_iter()
         .map(|query| {
             let needed_metadata = {
-                if partition_range.is_empty() && partition_num.is_some() && partition_on.is_some() {
+                if partition_range.is_empty()
+                    && partition_num.is_some()
+                    && partition_column.is_some()
+                {
                     NeededMetadataFromSource::CountAndMinMax
                 } else {
                     NeededMetadataFromSource::Count
                 }
             };
-            source.request_metadata(query, partition_on, needed_metadata, partition_range)
+            source.fetch_query_metadata(query, partition_column, needed_metadata, partition_range)
         })
         .collect();
 
     let metadata = Metadata {
         queries: query_metadata,
-        partition_on,
+        partition_column,
+        partition_range: Vec::from(partition_range),
+        partition_num,
     };
     metadata
 }
@@ -69,7 +74,9 @@ pub fn create_metadata<'a>(
 #[derive(Debug)]
 pub struct Metadata<'a> {
     pub queries: Vec<QueryMetadata>,
-    pub partition_on: Option<&'a str>,
+    pub partition_column: Option<&'a str>,
+    pub partition_range: Vec<i64>,
+    pub partition_num: Option<u16>,
 }
 
 #[derive(Debug)]
@@ -77,9 +84,17 @@ pub struct QueryMetadata {
     pub min_value: Option<i64>,
     pub max_value: Option<i64>,
 
-    /// Total count of rows that will be requested across all partitions.
+    /// Total count of rows of the original query, obtained with `metadata_query`
     pub count: i64,
+
+    /// The query that will be used to get metadata, count and/or min & max.
+    pub metadata_query: String,
+
+    /// The query that was originally passed by the user.
     pub query: String,
+
+    /// The query that will be used to fetch the data, with partition included if requested.
+    pub query_data: Vec<String>,
 }
 
 #[cfg(test)]

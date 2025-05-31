@@ -1,12 +1,14 @@
 use crate::metadata::NeededMetadataFromSource;
 use crate::metadata::QueryMetadata;
-use crate::source::source::{Source};
+use crate::source::source::Source;
+
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
+
 use sqlparser::ast::{Statement, TableFactor};
-use sqlparser::dialect::{PostgreSqlDialect};
+use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-
+use tokio_postgres::types::IsNull::No;
 use tokio_postgres::NoTls;
 
 #[derive(Debug)]
@@ -18,8 +20,16 @@ impl Source for PostgresSource {
     fn get_conn_string(&self) -> String {
         self.conn_string.clone()
     }
-
-    fn request_metadata(
+    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String {
+        format!(
+            "select * from ({query}) where {column} >= {start:?} and {column} < {stop:?}",
+            query = query,
+            column = column,
+            start = bounds.0,
+            stop = bounds.1
+        )
+    }
+    fn fetch_query_metadata(
         &self,
         query: &str,
         column: Option<&str>,
@@ -33,18 +43,23 @@ impl Source for PostgresSource {
 
         let mut client = pool.get().expect("Could not connect to the database");
 
-        let query = self.get_metadata_query(&query, column, needed_metadata, partition_range);
+        let metadata_query =
+            self.get_metadata_query(&query, column, needed_metadata, partition_range);
         let result = client
-            .query(query.as_str(), &[])
+            .query(metadata_query.as_str(), &[])
             .expect("TODO: panic message");
 
         let row = &result[0];
 
         QueryMetadata {
-            query,
+            metadata_query,
+            query: query.to_owned(),
             count: row.get(0),
+            // First try to get from the db, if they don't exist get it from partition_range
+            // otherwise just None.
             min_value: row.try_get(1).unwrap_or(partition_range.get(0).copied()),
             max_value: row.try_get(2).unwrap_or(partition_range.get(1).copied()),
+            query_data: vec![],
         }
     }
 
@@ -58,9 +73,10 @@ impl Source for PostgresSource {
         partition_range: &[i64],
     ) -> String {
         let table_name = self.get_table_name(query);
-        let col = column.expect("Trying to get min and max metadata without specifying a column");
+
         match needed_metadata_from_source {
             NeededMetadataFromSource::CountAndMinMax => {
+                let col = column.expect("Trying to use column without specifying column");
                 format!(
                     "SELECT COUNT(*)::bigint, \
                         MIN({col})::bigint, \
@@ -75,6 +91,7 @@ impl Source for PostgresSource {
 
                 // If partition_range is specified by the user, we add the 'where' part.
                 if !partition_range.is_empty() {
+                    let col = column.expect("Trying to use column without specifying column");
                     query.push_str(
                         format!(
                             " WHERE {col} > {min} and {col} < {max}",

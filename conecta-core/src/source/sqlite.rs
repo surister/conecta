@@ -9,8 +9,10 @@ impl Source for SqliteSource {
     fn get_conn_string(&self) -> String {
         self.conn_string.clone()
     }
-
-    fn request_metadata(
+    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String {
+        todo!()
+    }
+    fn fetch_query_metadata(
         &self,
         query: &str,
         column: Option<&str>,

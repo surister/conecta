@@ -1,8 +1,8 @@
-use std::fmt::Debug;
 use crate::source::postgres::PostgresSource;
 use crate::source::sqlite::SqliteSource;
+use std::fmt::Debug;
 
-use crate::source::source::Source;
+pub(crate) use crate::source::source::Source;
 
 mod postgres;
 mod source;
@@ -41,19 +41,17 @@ pub fn parse_uri(conn: String) -> SourceType {
         // sqlalchemy scheme. e.g. 'postgres+psycopg2'
         scheme = scheme.split("+").next().unwrap();
     }
-    
+
     match scheme {
         "postgres" => SourceType::Postgres,
         "postgresql" => SourceType::Postgres,
         "sqlite" => SourceType::SQLite,
-        _ => {
-            panic!(
-                "Unknown scheme <'{}'>, do we support that database, or is the \
+        _ => panic!(
+            "Unknown scheme <'{}'>, do we support that database, or is the \
                 scheme written correctly? Tip: Correct: <'postgres://user:password@localhost'>,\
                 Incorrect: <'pstgress://user:password@localhost'>.",
-                scheme
-            )
-        }
+            scheme
+        ),
     }
 }
 
@@ -64,16 +62,17 @@ pub fn get_source(conn_string: &str, conn_string_type: Option<&str>) -> Box<dyn 
             match conn_string_type {
                 "postgres" => SourceType::Postgres,
                 "mysqlite" => SourceType::SQLite,
-                _ => panic!("The specified conn_string_type is not supported.")
+                _ => panic!("The specified conn_string_type is not supported."),
             }
-        },
+        }
         None => {
             // User has not specified conn_string_type, we assume the format is URI.
             // https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
             parse_uri(conn_string.parse().unwrap())
         }
     };
-    
+
+    // Construct the `Source` struct and validate it.
     let source: Box<dyn Source> = match source_type {
         SourceType::Postgres => Box::new(PostgresSource {
             conn_string: conn_string.to_string(),

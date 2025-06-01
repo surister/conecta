@@ -11,39 +11,6 @@ pub fn create_metadata<'a>(
     partition_range: &[i64],
     partition_num: Option<u16>,
 ) -> Metadata<'a> {
-    if (partition_num.is_some() || partition_column.is_some() || partition_range.len() > 0)
-        && queries.len() > 1
-    {
-        panic!(
-            "Double partition scheme error: You have passed several queries\
-            (user defined partition) and one or some partition_* option \
-            (conecta's defined partition), passing these are not compatible.\
-            Read more at: [TODO PIECE OF DOC that explains what's happening nad how to fix it]"
-        )
-    }
-
-    if partition_num.is_some() && partition_column.is_none() {
-        panic!(
-            "You passed partition_num={}, but partition_on is None, hint: \
-            pass a column name.",
-            partition_num.unwrap()
-        )
-    }
-
-    if !partition_range.is_empty() && partition_column.is_none() {
-        panic!("You passed a partition_range but did not specified a partition_on.")
-    }
-
-    // Check that min/max values are valid.
-    if partition_range.len() == 2 {
-        if partition_range.get(0) >= partition_range.get(1) {
-            panic!(
-                "partition_range is (min, max) but min is not smaller than max; min={:?}, max={:?}",
-                partition_range[0], partition_range[1]
-            )
-        }
-    }
-
     let query_metadata = queries
         .into_iter()
         .map(|query| {

@@ -1,10 +1,8 @@
 use conecta_core::logger::log_memory;
-
+use conecta_core::metadata::create_metadata;
+use conecta_core::partition::{create_partitions, PartitionConfig};
 use conecta_core::source::get_source;
 
-use conecta_core::metadata::create_metadata;
-
-use conecta_core::partition::create_partitions;
 use tokio_postgres::Error;
 
 enum QueryPartitioningMode {
@@ -26,15 +24,17 @@ fn main() -> Result<(), Error> {
 
     env_logger::init();
     log_memory();
+
     let connection_string = "postgres://pg:pg@localhost:5432/postgres";
 
     // VARIABLES FROM USER
-    let query: Vec<&str> = vec!["select * from lineitem"];
+    let queries: Vec<String> = vec!["select * from lineitem".to_string()];
 
-    let partition_on = None;
-    let partition_range: Vec<i64> = vec![];
-    let partition_num: Option<u16> = None;
+    let partition_on = Some("l_orderkey".to_string());
+    let partition_range: Option<(i64, i64)> = None;
+    let partition_num: Option<u16> = Some(4);
 
+    /*    validate_partition_parameters();*/
     /*    let query: Vec<&str> = vec![
         "select * from lineitem where l_orderkey > 0 and l_orderkey < 20",
         "select * from lineitem where l_orderkey > 20 and l_orderkey < 50",
@@ -43,14 +43,13 @@ fn main() -> Result<(), Error> {
     /*    let partition_on = None;
     let partition_range: Vec<i64> = vec![];
     let partition_num: Option<u16> = None;*/
+    let partition_config =
+        PartitionConfig::new(queries, partition_on, partition_num, partition_range);
 
     let source = get_source(connection_string, None);
     let metadata = create_metadata(
         &source,
-        query,
-        partition_on,
-        &*partition_range,
-        partition_num,
+        partition_config,
     );
 
     let metadata = create_partitions(metadata, source);

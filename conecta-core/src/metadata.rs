@@ -1,49 +1,37 @@
+use crate::partition::PartitionConfig;
 use crate::source::Source;
 
+#[derive(Debug)]
 pub enum NeededMetadataFromSource {
     Count,
     CountAndMinMax,
 }
-pub fn create_metadata<'a>(
+pub fn create_metadata(
     source: &Box<dyn Source>,
-    queries: Vec<&'a str>,
-    partition_column: Option<&'a str>,
-    partition_range: &[i64],
-    partition_num: Option<u16>,
-) -> Metadata<'a> {
-    let query_metadata = queries
-        .into_iter()
+    partition_config: PartitionConfig,
+) -> Metadata {
+    let query_metadata: Vec<QueryMetadata> = partition_config.queries
+        .iter()
         .map(|query| {
-            let needed_metadata = {
-                if partition_range.is_empty()
-                    && partition_num.is_some()
-                    && partition_column.is_some()
-                {
-                    NeededMetadataFromSource::CountAndMinMax
-                } else {
-                    NeededMetadataFromSource::Count
-                }
-            };
-            source.fetch_query_metadata(query, partition_column, needed_metadata, partition_range)
+            source.fetch_query_metadata(query,
+                                        partition_config.partition_on.as_deref(),
+                                        &partition_config.needed_metadata_from_source,
+                                        partition_config.partition_range)
         })
         .collect();
 
     let metadata = Metadata {
         queries: query_metadata,
-        partition_column,
-        partition_range: Vec::from(partition_range),
-        partition_num,
+        partition_config,
     };
     metadata
 }
 
 /// Represents the metadata that the `Source`s will request before creating partitions.
 #[derive(Debug)]
-pub struct Metadata<'a> {
+pub struct Metadata {
     pub queries: Vec<QueryMetadata>,
-    pub partition_column: Option<&'a str>,
-    pub partition_range: Vec<i64>,
-    pub partition_num: Option<u16>,
+    pub partition_config: PartitionConfig,
 }
 
 #[derive(Debug)]

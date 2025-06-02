@@ -33,8 +33,8 @@ impl Source for PostgresSource {
         &self,
         query: &str,
         column: Option<&str>,
-        needed_metadata: NeededMetadataFromSource,
-        partition_range: &[i64],
+        needed_metadata: &NeededMetadataFromSource,
+        partition_range: Option<(i64, i64)>,
     ) -> QueryMetadata {
         let conn = self.get_conn_string().parse().unwrap();
         let manager = PostgresConnectionManager::new(conn, NoTls);
@@ -50,15 +50,13 @@ impl Source for PostgresSource {
             .expect("TODO: panic message");
 
         let row = &result[0];
-
+ 
         QueryMetadata {
             metadata_query,
             query: query.to_owned(),
             count: row.get(0),
-            // First try to get from the db, if they don't exist get it from partition_range
-            // otherwise just None.
-            min_value: row.try_get(1).unwrap_or(partition_range.get(0).copied()),
-            max_value: row.try_get(2).unwrap_or(partition_range.get(1).copied()),
+            min_value: row.try_get(1).ok().or_else(|| partition_range.map(|r| r.0)),
+            max_value: row.try_get(2).ok().or_else(|| partition_range.map(|r| r.1)),
             query_data: vec![],
         }
     }
@@ -69,8 +67,8 @@ impl Source for PostgresSource {
         &self,
         query: &str,
         column: Option<&str>,
-        needed_metadata_from_source: NeededMetadataFromSource,
-        partition_range: &[i64],
+        needed_metadata_from_source: &NeededMetadataFromSource,
+        partition_range: Option<(i64, i64)>,
     ) -> String {
         let table_name = self.get_table_name(query);
 
@@ -90,18 +88,19 @@ impl Source for PostgresSource {
                 let mut query = format!("SELECT COUNT(*)::bigint FROM ({query})");
 
                 // If partition_range is specified by the user, we add the 'where' part.
-                if !partition_range.is_empty() {
+                if let Some((min, max)) = partition_range {
                     let col = column.expect("Trying to use column without specifying column");
                     query.push_str(
                         format!(
                             " WHERE {col} > {min} and {col} < {max}",
                             col = col,
-                            min = partition_range[0],
-                            max = partition_range[1]
+                            min = min,
+                            max = max
                         )
-                        .as_str(),
+                            .as_str(),
                     );
                 }
+              
                 query
             }
         }

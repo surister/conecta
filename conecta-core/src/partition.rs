@@ -1,4 +1,4 @@
-use crate::metadata::{Metadata, QueryMetadata};
+use crate::metadata::{Metadata, NeededMetadataFromSource, QueryMetadata};
 use crate::source::Source;
 
 #[derive(Debug)]
@@ -7,6 +7,7 @@ pub struct PartitionConfig {
     pub partition_on: Option<String>,
     pub partition_num: Option<u16>,
     pub partition_range: Option<(i64, i64)>,
+    pub needed_metadata_from_source: NeededMetadataFromSource
 }
 
 impl PartitionConfig {
@@ -50,11 +51,23 @@ impl PartitionConfig {
                 );
             }
         }
+
+        let needed_metadata_from_source = {
+            if partition_range.is_none()
+                && partition_num.is_some()
+                && partition_on.is_some()
+            {
+                NeededMetadataFromSource::CountAndMinMax
+            } else {
+                NeededMetadataFromSource::Count
+            }
+        };
         PartitionConfig {
             queries,
             partition_range,
             partition_num,
             partition_on,
+            needed_metadata_from_source
         }
     }
 }
@@ -98,11 +111,11 @@ pub fn create_partitions(mut metadata: Metadata, source: Box<dyn Source>) -> Met
             "Trying to create partition but there are/is no query, something went very wrong."
         ),
         1 => {
-            if let Some(column) = metadata.partition_column {
+            if let Some(column) = &metadata.partition_config.partition_on {
                 for i in create_bounds(
                     metadata.queries[0].min_value.unwrap(),
                     metadata.queries[0].max_value.unwrap(),
-                    metadata.partition_num.unwrap() as usize,
+                    metadata.partition_config.partition_num.unwrap() as usize,
                 ) {
                     let mut queries = Vec::from(metadata.queries[0].query_data.clone());
                     queries.push(source.wrap_query_with_bounds(
@@ -112,7 +125,7 @@ pub fn create_partitions(mut metadata: Metadata, source: Box<dyn Source>) -> Met
                     ));
                     metadata.queries[0].query_data = queries;
                 }
-                for i in 0..metadata
+                for i in 0..metadata.partition_config
                     .partition_num
                     .expect("metadata is expected to have partition_num at this point")
                 {

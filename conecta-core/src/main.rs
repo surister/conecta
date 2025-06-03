@@ -1,22 +1,9 @@
 use conecta_core::logger::log_memory;
-use conecta_core::metadata::create_metadata;
-use conecta_core::partition::{create_partitions, PartitionConfig};
+use conecta_core::metadata::create_queryplan;
+use conecta_core::partition::{create_query_partitions, PartitionConfig};
 use conecta_core::source::get_source;
 
 use tokio_postgres::Error;
-
-enum QueryPartitioningMode {
-    /// A single unpartitioned query provided by the user.
-    /// `partition_num` is `None`.
-    OneUnpartitionedQuery,
-
-    /// A single query that should be partitioned by the system.
-    /// Both `partition_num` and `partition_column` must be set.
-    OnePartitionedQuery,
-
-    /// Multiple queries provided by the user, already partitioned.
-    PartitionedQueries,
-}
 
 fn main() -> Result<(), Error> {
     use std::time::Instant;
@@ -25,16 +12,17 @@ fn main() -> Result<(), Error> {
     env_logger::init();
     log_memory();
 
-    let connection_string = "postgres://pg:pg@localhost:5432/postgres";
+    let connection_string = "postgres://postgres:postgres@192.168.88.251:5400/postgres";
 
     // VARIABLES FROM USER
     let queries: Vec<String> = vec!["select * from lineitem".to_string()];
 
     let partition_on = Some("l_orderkey".to_string());
-    let partition_range: Option<(i64, i64)> = None;
-    let partition_num: Option<u16> = Some(4);
+    let partition_range: Option<(i64, i64)> = Some((1i64, 10000i64));
+    let partition_num: Option<u16> = Some(6);
 
     /*    validate_partition_parameters();*/
+
     /*    let query: Vec<&str> = vec![
         "select * from lineitem where l_orderkey > 0 and l_orderkey < 20",
         "select * from lineitem where l_orderkey > 20 and l_orderkey < 50",
@@ -47,14 +35,10 @@ fn main() -> Result<(), Error> {
         PartitionConfig::new(queries, partition_on, partition_num, partition_range);
 
     let source = get_source(connection_string, None);
-    let metadata = create_metadata(
-        &source,
-        partition_config,
-    );
+    let queryplan = create_queryplan(&source, partition_config);
+    source.get_schema_of("select * from lineitem");
 
-    let metadata = create_partitions(metadata, source);
-
-    println!("\n\n{:#?}", metadata);
+    // println!("\n\n{:#?}", queryplan);
 
     // let client = src.get_client();
     // client.query(src.get_metadata_query());

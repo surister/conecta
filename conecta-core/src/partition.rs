@@ -1,4 +1,4 @@
-use crate::metadata::{Metadata, NeededMetadataFromSource, QueryMetadata};
+use crate::metadata::{NeededMetadataFromSource, QueryPartitioningMode};
 use crate::source::Source;
 
 #[derive(Debug)]
@@ -7,7 +7,8 @@ pub struct PartitionConfig {
     pub partition_on: Option<String>,
     pub partition_num: Option<u16>,
     pub partition_range: Option<(i64, i64)>,
-    pub needed_metadata_from_source: NeededMetadataFromSource
+    pub needed_metadata_from_source: NeededMetadataFromSource,
+    pub query_partition_mode: QueryPartitioningMode,
 }
 
 impl PartitionConfig {
@@ -17,6 +18,10 @@ impl PartitionConfig {
         partition_num: Option<u16>,
         partition_range: Option<(i64, i64)>,
     ) -> Self {
+        if queries.is_empty() {
+            panic!("must pass some queries!")
+        }
+
         if (partition_num.is_some() || partition_on.is_some() || partition_range.is_some())
             && queries.len() > 1
         {
@@ -53,35 +58,35 @@ impl PartitionConfig {
         }
 
         let needed_metadata_from_source = {
-            if partition_range.is_none()
-                && partition_num.is_some()
-                && partition_on.is_some()
-            {
+            if partition_range.is_none() && partition_num.is_some() && partition_on.is_some() {
                 NeededMetadataFromSource::CountAndMinMax
             } else {
                 NeededMetadataFromSource::Count
             }
         };
+
+        let partition_mode = match (
+            partition_on.is_some(),
+            partition_num.is_some(),
+            queries.len(),
+        ) {
+            (true, true, 1) => QueryPartitioningMode::OnePartitionedQuery,
+            (_, _, n) if n > 1 => QueryPartitioningMode::PartitionedQueries,
+            _ => QueryPartitioningMode::OneUnpartitionedQuery,
+        };
+
         PartitionConfig {
             queries,
             partition_range,
             partition_num,
             partition_on,
-            needed_metadata_from_source
+            needed_metadata_from_source,
+            query_partition_mode: partition_mode,
         }
     }
 }
 
-/// Represents a Partitioned query. A query not partitioned by the user nor `strategy`
-/// will still be represented by one partition, that will contain all the data.
-#[derive(Debug)]
-pub struct PartitionPlan {
-    /// The partitioned query, e.g. `select * from lineitem where l_orderkey > 1 and l_orderkey < 1000`
-    pub query: String,
-    pub query_metadata: QueryMetadata,
-}
-
-fn create_bounds(min: i64, max: i64, n: usize) -> Vec<(i64, i64)> {
+fn bounds(min: i64, max: i64, n: usize) -> Vec<(i64, i64)> {
     assert!(min < max, "min must be less than max");
     assert!(n > 0, "n must be greater than 0");
 
@@ -101,48 +106,24 @@ fn create_bounds(min: i64, max: i64, n: usize) -> Vec<(i64, i64)> {
         }
         bounds.push((start, stop));
     }
-
     bounds
 }
 
-pub fn create_partitions(mut metadata: Metadata, source: Box<dyn Source>) -> Metadata {
-    match metadata.queries.len() {
-        0 => panic!(
-            "Trying to create partition but there are/is no query, something went very wrong."
-        ),
-        1 => {
-            if let Some(column) = &metadata.partition_config.partition_on {
-                for i in create_bounds(
-                    metadata.queries[0].min_value.unwrap(),
-                    metadata.queries[0].max_value.unwrap(),
-                    metadata.partition_config.partition_num.unwrap() as usize,
-                ) {
-                    let mut queries = Vec::from(metadata.queries[0].query_data.clone());
-                    queries.push(source.wrap_query_with_bounds(
-                        metadata.queries[0].query.as_str(),
-                        column,
-                        i,
-                    ));
-                    metadata.queries[0].query_data = queries;
-                }
-                for i in 0..metadata.partition_config
-                    .partition_num
-                    .expect("metadata is expected to have partition_num at this point")
-                {
-                    println!("query: {i}",);
-                }
-            } else {
-                metadata.queries[0].query_data = vec![metadata.queries[0].query.clone()];
-            }
-        }
-
-        _ => {
-            println!("more than 1 query by the user");
-        }
+pub fn create_query_partitions(
+    source: &Box<dyn Source>,
+    query: &str,
+    partition_on: &str,
+    partition_num: u16,
+    min: i64,
+    max: i64,
+) -> Vec<String> {
+    let mut data_queries: Vec<String> = Vec::with_capacity(partition_num as usize);
+    for bound in bounds(min, max, partition_num as usize) {
+        data_queries.push(source.wrap_query_with_bounds(query, partition_on, bound));
     }
-
-    metadata
+    data_queries
 }
+
 #[cfg(test)]
 mod create_bound_tests {
     use super::*;
@@ -152,32 +133,32 @@ mod create_bound_tests {
 
         #[test]
         fn test_even_partition() {
-            let result = create_bounds(0, 10, 2);
+            let result = bounds(0, 10, 2);
             assert_eq!(result, vec![(0, 5), (5, 10)]);
         }
 
         #[test]
         fn test_uneven_partition() {
-            let result = create_bounds(0, 10, 3);
+            let result = bounds(0, 10, 3);
             assert_eq!(result, vec![(0, 3), (3, 6), (7, 10)]);
         }
 
         #[test]
         fn test_single_partition() {
-            let result = create_bounds(5, 10, 1);
+            let result = bounds(5, 10, 1);
             assert_eq!(result, vec![(5, 10)]);
         }
 
         #[test]
         #[should_panic(expected = "min must be less than max")]
         fn test_invalid_range() {
-            create_bounds(10, 5, 3);
+            bounds(10, 5, 3);
         }
 
         #[test]
         #[should_panic(expected = "n must be greater than 0")]
         fn test_zero_partitions() {
-            create_bounds(0, 10, 0);
+            bounds(0, 10, 0);
         }
     }
 }
@@ -189,18 +170,36 @@ mod config_partition_tests {
     fn test_valid_single_query_no_partition() {
         let config =
             PartitionConfig::new(vec!["SELECT * FROM lineitem".to_string()], None, None, None);
-        assert_eq!(config.queries.len(), 1)
+        assert_eq!(config.queries.len(), 1);
+        assert_eq!(
+            config.needed_metadata_from_source,
+            NeededMetadataFromSource::Count
+        );
+        assert_eq!(
+            config.query_partition_mode,
+            QueryPartitioningMode::OneUnpartitionedQuery
+        );
     }
 
     #[test]
     fn test_valid_partition_on_with_num() {
+        let column = Some("l_orderkey".to_string());
         let config = PartitionConfig::new(
             vec!["SELECT * FROM lineitem".to_string()],
-            Some("l_orderkey".to_string()),
+            column.clone(),
             Some(4),
             None,
         );
         assert_eq!(config.partition_num, Some(4));
+        assert_eq!(config.partition_on, column);
+        assert_eq!(
+            config.needed_metadata_from_source,
+            NeededMetadataFromSource::CountAndMinMax
+        );
+        assert_eq!(
+            config.query_partition_mode,
+            QueryPartitioningMode::OnePartitionedQuery
+        );
     }
 
     #[test]
@@ -212,6 +211,14 @@ mod config_partition_tests {
             Some((0, 100)),
         );
         assert_eq!(config.partition_range, Some((0, 100)));
+        assert_eq!(
+            config.needed_metadata_from_source,
+            NeededMetadataFromSource::Count
+        );
+        assert_eq!(
+            config.query_partition_mode,
+            QueryPartitioningMode::OneUnpartitionedQuery
+        );
     }
 
     #[test]

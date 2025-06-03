@@ -5,6 +5,7 @@ use std::fmt::Debug;
 pub(crate) use crate::source::source::Source;
 
 mod postgres;
+mod schema;
 mod source;
 mod sqlite;
 

@@ -1,4 +1,4 @@
-use crate::metadata::{NeededMetadataFromSource, QueryMetadata};
+use crate::metadata::NeededMetadataFromSource;
 use crate::source::source::Source;
 #[derive(Debug)]
 pub struct SqliteSource {
@@ -12,13 +12,14 @@ impl Source for SqliteSource {
     fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String {
         todo!()
     }
-    fn fetch_query_metadata(
+
+    fn fetch_metadata(
         &self,
         query: &str,
         column: Option<&str>,
         needed_metadata: &NeededMetadataFromSource,
         partition_range: Option<(i64, i64)>,
-    ) -> QueryMetadata {
+    ) -> (Option<i64>, Option<i64>, i64, String) {
         todo!()
     }
 
@@ -33,6 +34,10 @@ impl Source for SqliteSource {
         needed_metadata_from_source: &NeededMetadataFromSource,
         partition_range: Option<(i64, i64)>,
     ) -> String {
+        todo!()
+    }
+
+    fn merge_queries(&self, queries: &Vec<String>) -> String {
         todo!()
     }
 

@@ -1,5 +1,4 @@
 use crate::metadata::NeededMetadataFromSource;
-use crate::metadata::QueryMetadata;
 use crate::source::source::Source;
 
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
@@ -8,7 +7,7 @@ use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use tokio_postgres::types::IsNull::No;
+use crate::source::schema::{Column, Schema, Type};
 use tokio_postgres::NoTls;
 
 #[derive(Debug)]
@@ -29,13 +28,13 @@ impl Source for PostgresSource {
             stop = bounds.1
         )
     }
-    fn fetch_query_metadata(
+    fn fetch_metadata(
         &self,
         query: &str,
         column: Option<&str>,
         needed_metadata: &NeededMetadataFromSource,
         partition_range: Option<(i64, i64)>,
-    ) -> QueryMetadata {
+    ) -> (Option<i64>, Option<i64>, i64, String) {
         let conn = self.get_conn_string().parse().unwrap();
         let manager = PostgresConnectionManager::new(conn, NoTls);
         //  todo careful here, max_size will have to be the size of the total partition.
@@ -44,23 +43,20 @@ impl Source for PostgresSource {
         let mut client = pool.get().expect("Could not connect to the database");
 
         let metadata_query =
-            self.get_metadata_query(&query, column, needed_metadata, partition_range);
+            self.get_metadata_query(query, column, needed_metadata, partition_range);
         let result = client
             .query(metadata_query.as_str(), &[])
             .expect("TODO: panic message");
 
         let row = &result[0];
- 
-        QueryMetadata {
-            metadata_query,
-            query: query.to_owned(),
-            count: row.get(0),
-            min_value: row.try_get(1).ok().or_else(|| partition_range.map(|r| r.0)),
-            max_value: row.try_get(2).ok().or_else(|| partition_range.map(|r| r.1)),
-            query_data: vec![],
-        }
-    }
 
+        (
+            row.try_get(1).ok(),
+            row.try_get(2).ok(),
+            row.get(0),
+            metadata_query,
+        )
+    }
     fn validate(&self) {}
 
     fn get_metadata_query(
@@ -97,15 +93,51 @@ impl Source for PostgresSource {
                             min = min,
                             max = max
                         )
-                            .as_str(),
+                        .as_str(),
                     );
                 }
-              
                 query
             }
         }
     }
 
+    fn merge_queries(&self, queries: &Vec<String>) -> String {
+        let mut subqueries: Vec<String> = Vec::new();
+
+        for (i, query) in queries.iter().enumerate() {
+            let alias = format!("t{}", i);
+            let wrapped = format!(
+                "(SELECT COUNT(*) FROM ({}) AS {})",
+                query.trim_end_matches(';'),
+                alias
+            );
+            subqueries.push(wrapped);
+        }
+        format!("SELECT {};", subqueries.join(" +\n       "))
+    }
+    fn get_schema_of(&self, query: &str) -> Schema {
+        let query = self.get_schema_query(query);
+        println!("{:?}", query);
+        let conn = self.get_conn_string().parse().unwrap();
+        let manager = PostgresConnectionManager::new(conn, NoTls);
+        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
+
+        let mut client = pool.get().expect("Could not connect to the database");
+        let result = client.prepare(&query);
+        let columns: Vec<Column> = result.unwrap().columns().iter().map(|col| {
+        Column {
+            name: col.name().to_string(),
+            data_type: Type::I64,
+        }
+    }).collect();
+        println!("{:#?}", columns);
+        // for i in result.unwrap() {
+        //     println!("ss");
+        //     println!("{:?}", i.columns())            
+        // }
+
+        Schema { columns: vec![] }
+    }
     fn get_schema_query(&self, original_query: &str) -> String {
         format!("select * from ({}) limit 0", original_query)
     }

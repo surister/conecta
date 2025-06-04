@@ -1,14 +1,16 @@
+use std::any::Any;
+
 use crate::metadata::NeededMetadataFromSource;
 use crate::source::source::Source;
-
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use crate::source::schema::{Column, Schema, Type};
+use crate::schema::{Column, Schema, NativeType};
 use tokio_postgres::NoTls;
+use tokio_postgres::types::Type;
 
 #[derive(Debug)]
 pub struct PostgresSource {
@@ -101,6 +103,25 @@ impl Source for PostgresSource {
         }
     }
 
+    fn get_schema_of(&self, query: &str) -> Schema {
+        let query = self.get_schema_query(query);
+        let conn = self.get_conn_string().parse().unwrap();
+        let manager = PostgresConnectionManager::new(conn, NoTls);
+        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
+
+        let mut client = pool.get().expect("Could not connect to the database");
+        let result = client.prepare(&query);
+        let columns: Vec<Column> = result.unwrap().columns().iter().map(|col| {
+        Column {
+            name: col.name().to_string(),
+            data_type: {
+                self.to_native_dt(col.type_())
+            },
+            original_dtype: col.type_().to_string(),
+        }
+    }).collect();
+        Schema { columns }
+    }
     fn merge_queries(&self, queries: &Vec<String>) -> String {
         let mut subqueries: Vec<String> = Vec::new();
 
@@ -115,33 +136,9 @@ impl Source for PostgresSource {
         }
         format!("SELECT {};", subqueries.join(" +\n       "))
     }
-    fn get_schema_of(&self, query: &str) -> Schema {
-        let query = self.get_schema_query(query);
-        println!("{:?}", query);
-        let conn = self.get_conn_string().parse().unwrap();
-        let manager = PostgresConnectionManager::new(conn, NoTls);
-        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
-
-        let mut client = pool.get().expect("Could not connect to the database");
-        let result = client.prepare(&query);
-        let columns: Vec<Column> = result.unwrap().columns().iter().map(|col| {
-        Column {
-            name: col.name().to_string(),
-            data_type: Type::I64,
-        }
-    }).collect();
-        println!("{:#?}", columns);
-        // for i in result.unwrap() {
-        //     println!("ss");
-        //     println!("{:?}", i.columns())            
-        // }
-
-        Schema { columns: vec![] }
-    }
     fn get_schema_query(&self, original_query: &str) -> String {
         format!("select * from ({}) limit 0", original_query)
     }
-
     fn get_table_name(&self, query: &str) -> String {
         let dialect = PostgreSqlDialect {}; // or use the dialect of your DB (e.g., MySqlDialect)
         let statements = Parser::parse_sql(&dialect, query).expect("Failed to parse SQL");
@@ -165,5 +162,26 @@ impl Source for PostgresSource {
             }
         }
         panic!("Could not extract table_name")
+    }
+
+    fn to_native_dt(&self, ty: &Type) -> NativeType {
+        match *ty {
+            Type::BOOL => NativeType::Bool,
+            Type::CHAR => NativeType::Char,
+            Type::INT2 => NativeType::I16,
+            Type::INT4 => NativeType::I32,
+            Type::INT8 => NativeType::I64,
+            Type::FLOAT4 => NativeType::F32,
+            Type::FLOAT8 => NativeType::F64,
+            Type::TEXT | Type::VARCHAR => NativeType::String,
+/*            Type::BYTEA => NativeType::VecU8,
+            Type::UUID => NativeType::Uuid,
+            Type::DATE => NativeType::NaiveDate,
+            Type::TIMESTAMP => NativeType::NaiveDateTime,
+            Type::NUMERIC => NativeType::BigDecimal, // ✅ The key mapping*/
+            Type::JSON | Type::JSONB => NativeType::String, // You can customize this
+            // Add more as needed
+            _ => NativeType::String,
+        }
     }
 }

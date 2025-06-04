@@ -1,9 +1,12 @@
-use conecta_core::logger::log_memory;
+use arrow::array::ArrayBuilder;
+use conecta_core::logger::{log_memory, log_peak_memory};
 use conecta_core::metadata::create_queryplan;
 use conecta_core::partition::{create_query_partitions, PartitionConfig};
 use conecta_core::source::get_source;
 
 use tokio_postgres::Error;
+use conecta_core::destination::{ArrowDestination, Destination};
+use conecta_core::schema::NativeType;
 
 fn main() -> Result<(), Error> {
     use std::time::Instant;
@@ -12,7 +15,7 @@ fn main() -> Result<(), Error> {
     env_logger::init();
     log_memory();
 
-    let connection_string = "postgres://postgres:postgres@192.168.88.251:5400/postgres";
+    let connection_string = "postgres://pg:pg@localhost:5432/postgres";
 
     // VARIABLES FROM USER
     let queries: Vec<String> = vec!["select * from lineitem".to_string()];
@@ -36,24 +39,20 @@ fn main() -> Result<(), Error> {
 
     let source = get_source(connection_string, None);
     let queryplan = create_queryplan(&source, partition_config);
-    source.get_schema_of("select * from lineitem");
-
+    let s = source.get_schema_of("select * from lineitem");
+    println!("{:#?}", s);
     // println!("\n\n{:#?}", queryplan);
-
-    // let client = src.get_client();
-    // client.query(src.get_metadata_query());
-    // match srctype {
-    //     postgres => {},
-    //     sqlite => {}
-    // }
-    // let partitions: Vec<Partition> = source.create_partitions();
-    // partitions.par_iter(|partition| (source.run_partition(partition)))
-
-    // let partitions = create_partitions(source, ...);
-    /* source.run_partition(partition);
-    run_partition(source, partition);*/
-
+    log_memory();
+    println!("allocated?");
+    let d = ArrowDestination {};
+    let builders = d.make_builders(vec![NativeType::I32], 10_000_000);
+    for builder in builders.iter() {
+        builder.append_nulls(10_000_000)
+   
+    }
+    log_memory();
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
+    log_peak_memory();
     Ok(())
 }

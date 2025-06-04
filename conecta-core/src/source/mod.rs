@@ -1,11 +1,10 @@
+pub use crate::source::source::Source;
 use crate::source::postgres::PostgresSource;
 use crate::source::sqlite::SqliteSource;
 use std::fmt::Debug;
 
-pub(crate) use crate::source::source::Source;
 
 mod postgres;
-mod schema;
 mod source;
 mod sqlite;
 
@@ -62,7 +61,7 @@ pub fn get_source(conn_string: &str, conn_string_type: Option<&str>) -> Box<dyn 
             // The user specified a conn_string_type.
             match conn_string_type {
                 "postgres" => SourceType::Postgres,
-                "mysqlite" => SourceType::SQLite,
+                "sqlite" => SourceType::SQLite,
                 _ => panic!("The specified conn_string_type is not supported."),
             }
         }

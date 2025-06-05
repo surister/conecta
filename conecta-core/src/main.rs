@@ -45,11 +45,10 @@ fn main() -> Result<(), Error> {
     log_memory();
     println!("allocated?");
     let d = ArrowDestination {};
-    let builders = d.allocate(NativeType::I32, 100_000_000);
-    for mut builder in builders.iter() {
-        builder.capacity();
-        let r = builder.finish();
-        builder.finish();
+    let builders = d.make_builders(vec![NativeType::I32], 10_000_000);
+    for builder in builders.iter() {
+        builder.append_nulls(10_000_000)
+   
     }
     log_memory();
     let elapsed = now.elapsed();

@@ -1,4 +1,5 @@
 use crate::metadata::NeededMetadataFromSource;
+use crate::schema::{NativeType, Schema};
 use crate::source::source::Source;
 #[derive(Debug)]
 pub struct SqliteSource {
@@ -37,6 +38,10 @@ impl Source for SqliteSource {
         todo!()
     }
 
+    fn get_schema_of(&self, query: &str) -> Schema {
+        todo!()
+    }
+
     fn merge_queries(&self, queries: &Vec<String>) -> String {
         todo!()
     }
@@ -46,6 +51,10 @@ impl Source for SqliteSource {
     }
 
     fn get_table_name(&self, query: &str) -> String {
+        todo!()
+    }
+
+    fn to_native_dt(&self, name: &tokio_postgres::types::Type) -> NativeType {
         todo!()
     }
 }

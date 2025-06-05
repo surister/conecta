@@ -1,7 +1,8 @@
 #[derive(Debug)]
-pub enum Type {
+pub enum NativeType {
     // Primitive types
     Bool,
+    Char,
     
     // Signed
     I8,
@@ -24,6 +25,7 @@ pub enum Type {
 }
 
 
+#[derive(Debug)]
 pub struct Schema {
     pub columns: Vec<Column>,
 }
@@ -31,5 +33,6 @@ pub struct Schema {
 #[derive(Debug)]
 pub struct Column {
     pub name: String,
-    pub data_type: Type,
+    pub data_type: NativeType,
+    pub original_dtype: String,
 }

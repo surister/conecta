@@ -1,7 +1,8 @@
 use crate::metadata::{NeededMetadataFromSource, QueryPartitioningMode};
 use crate::source::Source;
+use serde::Serialize;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct PartitionConfig {
     pub queries: Vec<String>,
     pub partition_on: Option<String>,
@@ -109,7 +110,7 @@ fn bounds(min: i64, max: i64, n: usize) -> Vec<(i64, i64)> {
     bounds
 }
 
-pub fn create_query_partitions(
+pub fn created_bounded_queries(
     source: &Box<dyn Source>,
     query: &str,
     partition_on: &str,

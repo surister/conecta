@@ -1,8 +1,7 @@
-pub use crate::source::source::Source;
 use crate::source::postgres::PostgresSource;
+pub use crate::source::source::Source;
 use crate::source::sqlite::SqliteSource;
 use std::fmt::Debug;
-
 
 mod postgres;
 mod source;

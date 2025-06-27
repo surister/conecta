@@ -1,6 +1,8 @@
+pub mod destination;
 pub mod logger;
 pub mod metadata;
 pub mod partition;
+pub mod schema;
 pub mod source;
 pub mod schema;
 pub mod destination;

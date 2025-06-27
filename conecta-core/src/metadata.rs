@@ -1,27 +1,31 @@
-use crate::partition::{create_query_partitions, PartitionConfig};
+use crate::partition::{created_bounded_queries, PartitionConfig};
 use crate::source::Source;
+use serde::Serialize;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum NeededMetadataFromSource {
     Count,
     CountAndMinMax,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum QueryPartitioningMode {
     /// A single unpartitioned query provided by the user.
-    /// `partition_num` is `None`.
     OneUnpartitionedQuery,
 
     /// A single query that should be partitioned by the system.
-    /// Both `partition_num` and `partition_column` must be set.
+    /// Both `partition_num` and `partition_column` must be also given by the user.
     OnePartitionedQuery,
 
     /// Multiple queries provided by the user, already partitioned.
     PartitionedQueries,
 }
 
-pub fn create_queryplan(source: &Box<dyn Source>, partition_config: PartitionConfig) -> QueryPlan {
+/// Creates a partition plan given the `Source` and the user configuration `PartitionConfig`.
+pub fn create_partition_plan(
+    source: &Box<dyn Source>,
+    partition_config: PartitionConfig,
+) -> PartitionPlan {
     let query_data: Vec<String>;
 
     let q = match partition_config.queries.len() {
@@ -38,8 +42,8 @@ pub fn create_queryplan(source: &Box<dyn Source>, partition_config: PartitionCon
         partition_config.partition_range,
     );
 
-    // If user didn't specify partition_range, we use the one fetched from fetch_metadata, this
-    // method might actually not fetch min/max if it is not needed, hence the `Option<i64>`.
+    // If the user didn't specify partition_range, we use the one fetched from fetch_metadata, this
+    // method might actually not fetch min/max if it is unnecessary, hence the `Option<i64>`.
     let (min_value, max_value) = match partition_config.partition_range {
         Some((a, b)) => (Some(a), Some(b)),
         None => (min, max),
@@ -48,10 +52,10 @@ pub fn create_queryplan(source: &Box<dyn Source>, partition_config: PartitionCon
     match partition_config.query_partition_mode {
         QueryPartitioningMode::OnePartitionedQuery => {
             // Create the bounded queries.
-            query_data = create_query_partitions(
+            query_data = created_bounded_queries(
                 source,
                 partition_config.queries[0].as_str(),
-                &*partition_config.partition_on.clone().unwrap(),
+                &partition_config.partition_on.clone().unwrap(),
                 partition_config.partition_num.unwrap(),
                 min_value.expect("should have a valid min at this point"),
                 max_value.expect("should have a valid max at this point"),
@@ -62,7 +66,7 @@ pub fn create_queryplan(source: &Box<dyn Source>, partition_config: PartitionCon
         _ => query_data = Vec::from(partition_config.queries.clone()),
     }
 
-    let query_plan = QueryPlan {
+    let partition_plan = PartitionPlan {
         min_value,
         max_value,
         count,
@@ -70,12 +74,13 @@ pub fn create_queryplan(source: &Box<dyn Source>, partition_config: PartitionCon
         query_data,
         partition_config,
     };
-    query_plan
+    partition_plan
 }
 
 /// Represents the metadata that the `Source`s will request before creating partitions.
-#[derive(Debug)]
-pub struct QueryPlan {
+
+#[derive(Debug, Serialize)]
+pub struct PartitionPlan {
     pub min_value: Option<i64>,
     pub max_value: Option<i64>,
 
@@ -157,7 +162,7 @@ mod tests {
             None,
         );
 
-        let query_plan = create_queryplan(&source, partition_config);
+        let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
         assert_eq!(query_plan.count, 10);
@@ -176,7 +181,7 @@ mod tests {
             partition_range,
         );
 
-        let query_plan = create_queryplan(&source, partition_config);
+        let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
         assert_eq!(query_plan.count, 10);
@@ -194,7 +199,7 @@ mod tests {
             partition_range,
         );
 
-        let query_plan = create_queryplan(&source, partition_config);
+        let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
         assert_eq!(query_plan.count, 10);
@@ -212,7 +217,7 @@ mod tests {
             partition_range,
         );
 
-        let query_plan = create_queryplan(&source, partition_config);
+        let query_plan = create_partition_plan(&source, partition_config);
         println!("{:#?}", query_plan);
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
@@ -235,7 +240,7 @@ mod tests {
             partition_range,
         );
 
-        let query_plan = create_queryplan(&source, partition_config);
+        let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
         assert_eq!(query_plan.count, 10);

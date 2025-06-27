@@ -8,9 +8,9 @@ use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use crate::schema::{Column, Schema, NativeType};
-use tokio_postgres::NoTls;
+use crate::schema::{Column, NativeType, Schema};
 use tokio_postgres::types::Type;
+use tokio_postgres::NoTls;
 
 #[derive(Debug)]
 pub struct PostgresSource {
@@ -111,15 +111,16 @@ impl Source for PostgresSource {
 
         let mut client = pool.get().expect("Could not connect to the database");
         let result = client.prepare(&query);
-        let columns: Vec<Column> = result.unwrap().columns().iter().map(|col| {
-        Column {
-            name: col.name().to_string(),
-            data_type: {
-                self.to_native_dt(col.type_())
-            },
-            original_dtype: col.type_().to_string(),
-        }
-    }).collect();
+        let columns: Vec<Column> = result
+            .unwrap()
+            .columns()
+            .iter()
+            .map(|col| Column {
+                name: col.name().to_string(),
+                data_type: { self.to_native_dt(col.type_()) },
+                original_dtype: col.type_().to_string(),
+            })
+            .collect();
         Schema { columns }
     }
     fn merge_queries(&self, queries: &Vec<String>) -> String {
@@ -174,7 +175,7 @@ impl Source for PostgresSource {
             Type::FLOAT4 => NativeType::F32,
             Type::FLOAT8 => NativeType::F64,
             Type::TEXT | Type::VARCHAR => NativeType::String,
-/*            Type::BYTEA => NativeType::VecU8,
+            /*            Type::BYTEA => NativeType::VecU8,
             Type::UUID => NativeType::Uuid,
             Type::DATE => NativeType::NaiveDate,
             Type::TIMESTAMP => NativeType::NaiveDateTime,

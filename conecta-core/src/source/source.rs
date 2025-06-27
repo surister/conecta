@@ -1,5 +1,5 @@
 use crate::metadata::NeededMetadataFromSource;
-use crate::schema::{Schema, NativeType};
+use crate::schema::{NativeType, Schema};
 use std::fmt::Debug;
 use tokio_postgres::types::Type;
 
@@ -36,6 +36,6 @@ pub trait Source: Debug {
     fn send_query(&self, query: &str) {}
     fn get_schema_query(&self, query: &str) -> String;
     fn get_table_name(&self, query: &str) -> String;
-    
+
     fn to_native_dt(&self, ty: &Type) -> NativeType;
 }

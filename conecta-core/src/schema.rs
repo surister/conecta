@@ -3,7 +3,7 @@ pub enum NativeType {
     // Primitive types
     Bool,
     Char,
-    
+
     // Signed
     I8,
     I16,
@@ -16,14 +16,13 @@ pub enum NativeType {
     U32,
     U64,
     U128,
-    
+
     F32,
     F64,
 
     // String types
     String,
 }
-
 
 #[derive(Debug)]
 pub struct Schema {

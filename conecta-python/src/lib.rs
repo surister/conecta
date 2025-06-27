@@ -2,7 +2,6 @@ use conecta_core::partition::PartitionConfig;
 use conecta_core::source::get_source;
 use conecta_core::test_from_core;
 use pyo3::prelude::*;
-use conecta_core::test_from_core;
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]

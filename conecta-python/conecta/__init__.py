@@ -22,7 +22,7 @@ class PartitionConfig:
         partition_range: The min and max value of `partition_num`.
         needed_metadata_from_source: The metadata that needs to be fetched from the ``Source``. There
          are two options: [Count,CountAndMinMax]
-        query_partitioning_mode: The mode that was inferred from the user parameters, there are
+        query_partition_mode: The mode that was inferred from the user parameters, there are
          three options: [OneUnpartitionedQuery, OnePartitionedQuery, PartitionedQueries] See more at
          [todo add link of rust ENUM]
         ...
@@ -32,7 +32,7 @@ class PartitionConfig:
     partition_num: Optional[int]
     partition_range: tuple[int]
     needed_metadata_from_source: str
-    query_partitioning_mode: str
+    query_partition_mode: str
 
 @dataclasses.dataclass
 class PartitionPlan:

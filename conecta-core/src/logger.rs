@@ -10,9 +10,9 @@ pub fn log_memory() {
     )
 }
 
-pub fn log_memory_with_label(label: &str) {
+pub fn log_memory_with_message(message: &str) {
     log::debug!(
-        "[DEBUG] label:{label} | Current memory usage: {}MB",
+        "[DEBUG] {message} | Current memory usage: {}MB",
         PEAK_ALLOC.current_usage_as_mb()
     )
 }

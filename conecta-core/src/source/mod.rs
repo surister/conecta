@@ -13,6 +13,8 @@ pub enum SourceType {
     SQLite,
 }
 
+pub type SourceRef = Box<dyn Source>;
+
 /// Parses a connection string and returns the `SourceType` depending on the scheme.
 /// # Example:
 /// ```
@@ -30,7 +32,7 @@ pub enum SourceType {
 /// "postgresql://user:password@localhost"
 /// ```
 ///
-/// If scheme is unknown, it panics. When adding a new Database Source, it is also needed
+/// If the scheme is unknown, it panics. When adding a new Database Source, it is also needed
 /// to add a new Enum value.
 
 pub fn parse_uri(conn: String) -> SourceType {

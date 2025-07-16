@@ -10,6 +10,7 @@ pub enum NativeType {
     I32,
     I64,
     I128,
+
     // Unsigned
     U8,
     U16,
@@ -33,5 +34,5 @@ pub struct Schema {
 pub struct Column {
     pub name: String,
     pub data_type: NativeType,
-    pub original_dtype: String,
+    pub original_type_repr: String
 }

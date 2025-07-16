@@ -28,7 +28,7 @@ pub fn create_partition_plan(
 ) -> PartitionPlan {
     let query_data: Vec<String>;
 
-    let q = match partition_config.queries.len() {
+    let query = match partition_config.queries.len() {
         1 => partition_config.queries.get(0).unwrap(),
 
         // We always merge the metadata queries into one, to avoid the overhead of sending
@@ -36,7 +36,7 @@ pub fn create_partition_plan(
         _ => &source.merge_queries(&partition_config.queries),
     };
     let (min, max, count, metadata_query) = source.fetch_metadata(
-        q,
+        query,
         partition_config.partition_on.as_deref(),
         &partition_config.needed_metadata_from_source,
         partition_config.partition_range,
@@ -84,7 +84,7 @@ pub struct PartitionPlan {
     pub min_value: Option<i64>,
     pub max_value: Option<i64>,
 
-    /// Total count of rows of the original query, obtained with `metadata_query`
+    /// Total count of rows, obtained with `metadata_query`
     pub count: i64,
 
     /// The query that will be used to get metadata, count and/or min & max.
@@ -185,7 +185,10 @@ mod tests {
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
         assert_eq!(query_plan.count, 10);
-        assert_eq!(query_plan.query_data.len(), partitions_num.unwrap().into())
+        assert_eq!(
+            query_plan.query_data.len() as i16,
+            partitions_num.unwrap() as i16
+        )
     }
     #[test]
     fn test_create_query_plan_unpartitioned_single_query() {

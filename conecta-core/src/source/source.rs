@@ -1,9 +1,8 @@
 use crate::metadata::NeededMetadataFromSource;
-use crate::schema::{Schema};
+use crate::schema::Schema;
 use std::fmt::Debug;
 
 pub trait Source: Debug + Send + Sync {
-    
     /// Getter that returns the connection_string.
     fn get_conn_string(&self) -> String;
 

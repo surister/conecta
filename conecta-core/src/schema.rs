@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NativeType {
     // Primitive types
     Bool,
@@ -12,27 +12,32 @@ pub enum NativeType {
     I128,
 
     // Unsigned
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
+    UI8,
+    UI16,
+    UI32,
+    UI64,
+    UI128,
 
+    // Float
+    F16,
     F32,
     F64,
 
     // String types
     String,
+    
+    // Time
+    Date
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Schema {
     pub columns: Vec<Column>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Column {
     pub name: String,
     pub data_type: NativeType,
-    pub original_type_repr: String
+    pub original_type_repr: String,
 }

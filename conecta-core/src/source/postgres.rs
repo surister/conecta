@@ -1,16 +1,19 @@
-use std::any::Any;
+use arrow::array::*;
+use r2d2_postgres::postgres;
 
-use crate::metadata::NeededMetadataFromSource;
-use crate::source::source::Source;
+use arrow::array::*;
+
+use postgres::types::Type;
+use postgres::{NoTls};
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
+use crate::metadata::NeededMetadataFromSource;
 use crate::schema::{Column, NativeType, Schema};
-use tokio_postgres::types::Type;
-use tokio_postgres::NoTls;
+use crate::source::source::Source;
 
 #[derive(Debug)]
 pub struct PostgresSource {
@@ -21,6 +24,8 @@ impl Source for PostgresSource {
     fn get_conn_string(&self) -> String {
         self.conn_string.clone()
     }
+
+    // SQL creation methods.
     fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String {
         format!(
             "select * from ({query}) where {column} >= {start:?} and {column} < {stop:?}",
@@ -30,36 +35,49 @@ impl Source for PostgresSource {
             stop = bounds.1
         )
     }
-    fn fetch_metadata(
-        &self,
-        query: &str,
-        column: Option<&str>,
-        needed_metadata: &NeededMetadataFromSource,
-        partition_range: Option<(i64, i64)>,
-    ) -> (Option<i64>, Option<i64>, i64, String) {
-        let conn = self.get_conn_string().parse().unwrap();
-        let manager = PostgresConnectionManager::new(conn, NoTls);
-        //  todo careful here, max_size will have to be the size of the total partition.
-        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
 
-        let mut client = pool.get().expect("Could not connect to the database");
+    fn merge_queries(&self, queries: &Vec<String>) -> String {
+        let mut subqueries: Vec<String> = Vec::new();
 
-        let metadata_query =
-            self.get_metadata_query(query, column, needed_metadata, partition_range);
-        let result = client
-            .query(metadata_query.as_str(), &[])
-            .expect("TODO: panic message");
-
-        let row = &result[0];
-
-        (
-            row.try_get(1).ok(),
-            row.try_get(2).ok(),
-            row.get(0),
-            metadata_query,
-        )
+        for (i, query) in queries.iter().enumerate() {
+            let alias = format!("t{}", i);
+            let wrapped = format!(
+                "(SELECT COUNT(*) FROM ({}) AS {})",
+                query.trim_end_matches(';'),
+                alias
+            );
+            subqueries.push(wrapped);
+        }
+        format!("SELECT {};", subqueries.join(" +\n       "))
     }
-    fn validate(&self) {}
+
+    fn get_schema_query(&self, query: &str) -> String {
+        format!("select * from ({}) limit 0", query)
+    }
+
+    fn get_table_name(&self, query: &str) -> String {
+        let dialect = PostgreSqlDialect {};
+        let statements = Parser::parse_sql(&dialect, query).expect("Failed to parse SQL");
+
+        for stmt in statements {
+            if let Statement::Query(query) = stmt {
+                let select = query.body.as_ref();
+
+                if let sqlparser::ast::SetExpr::Select(select) = select {
+                    let from = &select.from;
+
+                    for table_with_joins in from {
+                        let relation = &table_with_joins.relation;
+
+                        if let TableFactor::Table { name, .. } = relation {
+                            return name.to_string();
+                        }
+                    }
+                }
+            }
+        }
+        panic!("Could not extract table_name")
+    }
 
     fn get_metadata_query(
         &self,
@@ -71,13 +89,23 @@ impl Source for PostgresSource {
         let table_name = self.get_table_name(query);
 
         match needed_metadata_from_source {
+            NeededMetadataFromSource::MinMax => {
+                let col = column.expect("Trying to use column without specifying column");
+                format!(
+                    "SELECT MIN({col})::bigint, \
+                            MAX({col})::bigint \
+                    FROM {table_name}",
+                    col = col,
+                    table_name = table_name
+                )
+            }
             NeededMetadataFromSource::CountAndMinMax => {
                 let col = column.expect("Trying to use column without specifying column");
                 format!(
                     "SELECT COUNT(*)::bigint, \
                         MIN({col})::bigint, \
                         MAX({col})::bigint \
-                FROM {table_name}",
+                    FROM {table_name}",
                     col = col,
                     table_name = table_name
                 )
@@ -100,8 +128,52 @@ impl Source for PostgresSource {
                 }
                 query
             }
+            NeededMetadataFromSource::None => {
+                // Fixme: Ideally we skip the metadata fetching process
+                "select 1".to_string()
+            }
         }
     }
+    fn fetch_metadata(
+        &self,
+        query: &str,
+        column: Option<&str>,
+        needed_metadata: &NeededMetadataFromSource,
+        partition_range: Option<(i64, i64)>,
+    ) -> (Option<i64>, Option<i64>, i64, String) {
+        let conn = self.get_conn_string().parse().unwrap();
+        let manager = PostgresConnectionManager::new(conn, NoTls);
+
+        //  todo careful here, max_size will have to be the size of the total partition.
+        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
+
+        let mut client = pool.get().expect("Could not connect to the database");
+
+        let metadata_query =
+            self.get_metadata_query(query, column, needed_metadata, partition_range);
+
+        let result = client
+            .query_one(metadata_query.as_str(), &[])
+            .expect("TODO: panic message");
+
+        match needed_metadata {
+            NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count => (
+                result.try_get(1).ok(),
+                result.try_get(2).ok(),
+                result.get(0),
+                metadata_query,
+            ),
+            NeededMetadataFromSource::MinMax => (
+                result.try_get(0).ok(),
+                result.try_get(1).ok(),
+                0,
+                metadata_query,
+            ),
+            // Fixme, make count option
+            NeededMetadataFromSource::None => (None, None, 0, metadata_query),
+        }
+    }
+    fn validate(&self) {}
 
     fn get_schema_of(&self, query: &str) -> Schema {
         let query = self.get_schema_query(query);
@@ -117,72 +189,23 @@ impl Source for PostgresSource {
             .iter()
             .map(|col| Column {
                 name: col.name().to_string(),
-                data_type: { self.to_native_dt(col.type_()) },
-                original_dtype: col.type_().to_string(),
+                data_type: to_native_ty(col.type_().to_owned()),
+                original_type_repr: col.type_().to_string(),
             })
             .collect();
         Schema { columns }
     }
-    fn merge_queries(&self, queries: &Vec<String>) -> String {
-        let mut subqueries: Vec<String> = Vec::new();
+}
 
-        for (i, query) in queries.iter().enumerate() {
-            let alias = format!("t{}", i);
-            let wrapped = format!(
-                "(SELECT COUNT(*) FROM ({}) AS {})",
-                query.trim_end_matches(';'),
-                alias
-            );
-            subqueries.push(wrapped);
-        }
-        format!("SELECT {};", subqueries.join(" +\n       "))
-    }
-    fn get_schema_query(&self, original_query: &str) -> String {
-        format!("select * from ({}) limit 0", original_query)
-    }
-    fn get_table_name(&self, query: &str) -> String {
-        let dialect = PostgreSqlDialect {}; // or use the dialect of your DB (e.g., MySqlDialect)
-        let statements = Parser::parse_sql(&dialect, query).expect("Failed to parse SQL");
-
-        for stmt in statements {
-            if let Statement::Query(query) = stmt {
-                let select = query.body.as_ref();
-
-                if let sqlparser::ast::SetExpr::Select(select) = select {
-                    let from = &select.from;
-
-                    for table_with_joins in from {
-                        let relation = &table_with_joins.relation;
-
-                        if let TableFactor::Table { name, .. } = relation {
-                            // name is an ObjectName, use to_string() or access parts
-                            return name.to_string();
-                        }
-                    }
-                }
-            }
-        }
-        panic!("Could not extract table_name")
-    }
-
-    fn to_native_dt(&self, ty: &Type) -> NativeType {
-        match *ty {
-            Type::BOOL => NativeType::Bool,
-            Type::CHAR => NativeType::Char,
-            Type::INT2 => NativeType::I16,
-            Type::INT4 => NativeType::I32,
-            Type::INT8 => NativeType::I64,
-            Type::FLOAT4 => NativeType::F32,
-            Type::FLOAT8 => NativeType::F64,
-            Type::TEXT | Type::VARCHAR => NativeType::String,
-            /*            Type::BYTEA => NativeType::VecU8,
-            Type::UUID => NativeType::Uuid,
-            Type::DATE => NativeType::NaiveDate,
-            Type::TIMESTAMP => NativeType::NaiveDateTime,
-            Type::NUMERIC => NativeType::BigDecimal, // ✅ The key mapping*/
-            Type::JSON | Type::JSONB => NativeType::String, // You can customize this
-            // Add more as needed
-            _ => NativeType::String,
-        }
+fn to_native_ty(ty: Type) -> NativeType {
+    match ty {
+        Type::INT4 => NativeType::I32,
+        Type::INT8 => NativeType::I64,
+        Type::FLOAT4 => NativeType::F32,
+        Type::FLOAT8 => NativeType::F64,
+        Type::CHAR | Type::TEXT => NativeType::String,
+        Type::BPCHAR => NativeType::String,
+        Type::DATE => NativeType::Date,
+        _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

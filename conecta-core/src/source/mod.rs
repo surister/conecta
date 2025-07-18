@@ -3,7 +3,7 @@ pub use crate::source::source::Source;
 use crate::source::sqlite::SqliteSource;
 use std::fmt::Debug;
 
-mod postgres;
+pub mod postgres;
 mod source;
 mod sqlite;
 

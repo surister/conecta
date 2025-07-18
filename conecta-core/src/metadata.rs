@@ -5,7 +5,10 @@ use serde::Serialize;
 #[derive(Debug, PartialEq, Serialize)]
 pub enum NeededMetadataFromSource {
     Count,
+    MinMax,
     CountAndMinMax,
+    // The user has already provided both, or one but the destination does not need it.
+    None,
 }
 
 #[derive(Debug, PartialEq, Serialize)]

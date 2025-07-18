@@ -6,6 +6,9 @@ from typing import Literal, Optional
 
 from .conecta import sum_as_string as _sum_as_string
 from .conecta import create_partition_plan as _create_partition_plan
+from .conecta import read_sql as _read_sql
+
+import pyarrow as pa
 
 @dataclasses.dataclass
 class PartitionConfig:
@@ -88,21 +91,29 @@ def create_partition_plan(
     return PartitionPlan.from_dict(plan)
 
 
-# Todo: Add support for detecting bad arguments like 'return_type'
-# (which is connectorx API), and recommend the new name.
 def read_sql(
         conn: str,
-        query: str,
-        *,
-        pre_query: Optional["str"] = None,
-        post_query: Optional["str"] = None,
-        df_return_type: Literal["arrow", "pandas", "polars"] = "arrow",
-        protocol: str = "default",  # options depends on source.
-        # Todo: Can we give the user the option to pass a method, and we run that method to calculate the partition number?
-        # Default is 'do nothing automatically', let the user input.
-        partition_strategy: Literal["default", "high", "low"] = "default",
-        partition_column,
-        partition_range: Optional[tuple[int, int]],
-        partition_n: Optional[int],
-):
-    pass
+        queries: list[str],
+        partition_on: Optional[str] = None,
+        partition_range: tuple = None,
+        partition_num: int = None):
+    return _read_sql(conn, queries, partition_on, partition_range, partition_num)
+
+# Todo: Add support for detecting bad arguments like 'return_type'
+# (which is connectorx API), and recommend the new name.
+# def read_sql(
+#         conn: str,
+#         query: str,
+#         *,
+#         pre_query: Optional["str"] = None,
+#         post_query: Optional["str"] = None,
+#         df_return_type: Literal["arrow", "pandas", "polars"] = "arrow",
+#         protocol: str = "default",  # options depends on source.
+#         # Todo: Can we give the user the option to pass a method, and we run that method to calculate the partition number?
+#         # Default is 'do nothing automatically', let the user input.
+#         partition_strategy: Literal["default", "high", "low"] = "default",
+#         partition_column,
+#         partition_range: Optional[tuple[int, int]],
+#         partition_n: Optional[int],
+# ):
+#     pass

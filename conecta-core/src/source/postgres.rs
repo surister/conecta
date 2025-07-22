@@ -216,7 +216,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::FLOAT8 => NativeType::F64,
         Type::CHAR | Type::TEXT => NativeType::String,
         Type::BPCHAR => NativeType::String,
-        Type::DATE => NativeType::Date,
+        Type::DATE => NativeType::Date32,
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

@@ -167,7 +167,7 @@ pub fn read_sql(
                         NativeType::I32 => Int32Builder, i32, | v| v,
                         NativeType::F32 => Float32Builder, f32, | v | v,
                         NativeType::F64 => Float64Builder, f64, | v | v,
-                        NativeType::Date => Date32Builder, NaiveDate, |v: NaiveDate|{
+                        NativeType::Date32 => Date32Builder, NaiveDate, |v: NaiveDate|{
                             let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
                             (v - epoch).num_days() as i32
                         },

@@ -26,9 +26,13 @@ impl Source for PostgresSource {
     }
 
     // SQL creation methods.
-    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String {
+    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64), is_last: bool) -> String {
+        let last_char = {
+            if is_last { "<=" } else { "<" }
+        };
+
         format!(
-            "select * from ({query}) where {column} >= {start:?} and {column} < {stop:?}",
+            "select * from ({query}) where {column} >= {start:?} and {column} {last_char} {stop:?}",
             query = query,
             column = column,
             start = bounds.0,
@@ -48,6 +52,7 @@ impl Source for PostgresSource {
             );
             subqueries.push(wrapped);
         }
+
         format!("SELECT {};", subqueries.join(" +\n       "))
     }
 
@@ -134,6 +139,7 @@ impl Source for PostgresSource {
             }
         }
     }
+
     fn fetch_metadata(
         &self,
         query: &str,
@@ -177,9 +183,14 @@ impl Source for PostgresSource {
 
     fn get_schema_of(&self, query: &str) -> Schema {
         let query = self.get_schema_query(query);
-        let conn = self.get_conn_string().parse().unwrap();
+        let conn = self.get_conn_string()
+            .parse()
+            .unwrap();
         let manager = PostgresConnectionManager::new(conn, NoTls);
-        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
+        let pool = r2d2::Pool::builder()
+            .max_size(5)
+            .build(manager)
+            .unwrap();
 
         let mut client = pool.get().expect("Could not connect to the database");
         let result = client.prepare(&query);

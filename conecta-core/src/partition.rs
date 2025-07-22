@@ -103,8 +103,8 @@ fn bounds(min: i64, max: i64, n: usize) -> Vec<(i64, i64)> {
     let step = range / n as f64;
 
     for i in 0..n {
-        let start = (step * i as f64 + min as f64).round() as i64;
-        let mut stop = (start as f64 + step).round() as i64;
+        let start = (step * i as f64 + min as f64) as i64;
+        let mut stop = (start as f64 + step) as i64;
         if i == n - 1 {
             stop = max;
             // last one we set to max, otherwise we will be a bit off due to rounding
@@ -125,8 +125,12 @@ pub fn created_bounded_queries(
     max: i64,
 ) -> Vec<String> {
     let mut data_queries: Vec<String> = Vec::with_capacity(partition_num as usize);
-    for bound in bounds(min, max, partition_num as usize) {
-        data_queries.push(source.wrap_query_with_bounds(query, partition_on, bound));
+    for (i, bound) in bounds(min, max, partition_num as usize).into_iter().enumerate() {
+        let is_last = {
+            i == (partition_num - 1) as usize
+        };
+        let query = source.wrap_query_with_bounds(query, partition_on, bound, is_last);
+        data_queries.push(query);
     }
     data_queries
 }

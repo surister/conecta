@@ -1,10 +1,10 @@
 use conecta_core::partition::PartitionConfig;
 use conecta_core::source::get_source;
-use conecta_core::{make_record_batch_from_array, test_from_core};
-
+use conecta_core::{make_record_batches, test_from_core};
+use std::sync::Arc;
 
 use pyo3::prelude::*;
-use pyo3_arrow::{PyRecordBatch};
+use pyo3_arrow::{PyTable};
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]
@@ -51,8 +51,6 @@ pub fn read_sql<'py>(
 ) -> PyResult<PyObject> {
     env_logger::init();
 
-    // Metadata to print and log memory.
-
     let (arrays, schema) = py.allow_threads(|| {
         conecta_core::read_sql(
             connection_string,
@@ -62,13 +60,18 @@ pub fn read_sql<'py>(
             partition_num,
         )
     });
-    // println!("{:?}", rb);
-    let rb = make_record_batch_from_array(
+
+    let record_batches = make_record_batches(
         arrays,
-        schema.columns.into_iter().map(|col| col.name).collect()
+        schema
+            .clone()
+            .columns
+            .into_iter()
+            .map(|col| col.name)
+            .collect(),
     );
 
-    Ok(PyRecordBatch::from(rb).to_pyarrow(py)?)
+    Ok(PyTable::try_new(record_batches, Arc::new(schema.to_arrow()))?.to_pyarrow(py)?)
 }
 
 /// A Python module implemented in Rust.

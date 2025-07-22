@@ -15,7 +15,7 @@ pub trait Source: Debug + Send + Sync {
     /// wrap_query_with_bounds("select 1 from tbl", "mycolumn", (1, 10));
     ///  "select * from (select * from tbl1 ) as t where t.mycolumn > 1 and t.mycolumn < 10"
     /// ```
-    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64)) -> String;
+    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64), is_last: bool) -> String;
 
     fn merge_queries(&self, queries: &Vec<String>) -> String;
 

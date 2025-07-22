@@ -1,5 +1,14 @@
+use std::sync::Arc;
+
 use postgres::types::WasNull;
+use postgres::fallible_iterator::FallibleIterator;
+use postgres::{NoTls, RowIter};
+use r2d2_postgres::r2d2::{Pool};
+use r2d2_postgres::PostgresConnectionManager;
+
 use rayon::iter::ParallelIterator;
+use rayon::iter::IntoParallelIterator;
+
 pub mod debug;
 pub mod destination;
 pub mod logger;
@@ -15,42 +24,56 @@ use crate::metadata::create_partition_plan;
 use crate::partition::PartitionConfig;
 use crate::schema::NativeType;
 use crate::source::get_source;
+
 use arrow::array::{
-    ArrayBuilder, ArrayRef, Date32Builder, Float32Builder, Float64Builder,
-    Int32Builder, StringBuilder,
+    ArrayBuilder,
+    ArrayRef,
+    Date32Builder,
+    Float32Builder,
+    Float64Builder,
+    Int32Builder,
+    StringBuilder,
 };
 use arrow::datatypes::{Field, Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;
+
 use chrono::NaiveDate;
-use postgres::fallible_iterator::FallibleIterator;
-use postgres::{NoTls, RowIter};
-use r2d2_postgres::r2d2::{Pool};
-use r2d2_postgres::PostgresConnectionManager;
-use rayon::iter::IntoParallelIterator;
-use std::sync::Arc;
 
 pub fn test_from_core() -> i32 {
     3
 }
 
-pub fn make_record_batch_from_array(
+/// Given a vector `Vec<T>` where `T` is `Vec<ArrayRef>` representing a chunk of the same table
+/// transform all `T` to a `arrow::datatype::RecordBatch`.
+///
+/// All record batches are assumed to have the same schema, they are not concatenated
+/// to avoid memory copying.
+pub fn make_record_batches(
     arrays: Vec<Vec<ArrayRef>>,
-    col_names: Vec<String>) -> RecordBatch {
-    let arrays:Vec<ArrayRef> = arrays.into_iter().flatten().collect::<Vec<_>>();
-    make_record_batch(arrays, col_names)
+    col_names: Vec<String>
+) -> Vec<RecordBatch> {
+    arrays
+        .into_iter()
+        .map(|chunk| make_record_batch(chunk, col_names.clone()))
+        .collect::<Vec<RecordBatch>>()
 }
-pub fn make_record_batch(arrays: Vec<ArrayRef>, colnames: Vec<String>) -> RecordBatch {
+
+
+pub fn make_record_batch(
+    arrays: Vec<ArrayRef>,
+    col_names: Vec<String>
+) -> RecordBatch {
     let fields: Vec<Field> = arrays
         .iter()
-        .zip(colnames)
+        .zip(col_names)
         .map(|(array, name)| {
             Field::new(&name, array.data_type().clone(), true)
         })
         .collect();
 
     let schema = Arc::new(Schema::new(fields));
-    println!("{:?}", arrays.len());
-    RecordBatch::try_new(SchemaRef::from(schema.clone()), arrays)
+    RecordBatch::try_new(
+        SchemaRef::from(schema.clone()), arrays)
         .expect("Failed to create RecordBatch sexy")
 }
 
@@ -97,7 +120,7 @@ pub fn read_sql(
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
-) -> (Vec<Vec<ArrayRef>>, schema::Schema) {
+) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
     let mut metadata = Metadata::new_started();
     let partition_config = PartitionConfig::new(
         queries.clone(),

@@ -51,8 +51,7 @@ pub fn get_arrow_builders(schema: Schema) -> Vec<Box<dyn ArrayBuilder>> {
         NativeType::F64 => Float64Builder,
 
         NativeType::String => StringBuilder,
-
-        NativeType::Date => Date32Builder
+        NativeType::Date32 => Date32Builder
     })
 }
 

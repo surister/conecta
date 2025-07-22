@@ -125,10 +125,11 @@ pub fn created_bounded_queries(
     max: i64,
 ) -> Vec<String> {
     let mut data_queries: Vec<String> = Vec::with_capacity(partition_num as usize);
-    for (i, bound) in bounds(min, max, partition_num as usize).into_iter().enumerate() {
-        let is_last = {
-            i == (partition_num - 1) as usize
-        };
+    for (i, bound) in bounds(min, max, partition_num as usize)
+        .into_iter()
+        .enumerate()
+    {
+        let is_last = { i == (partition_num - 1) as usize };
         let query = source.wrap_query_with_bounds(query, partition_on, bound, is_last);
         data_queries.push(query);
     }

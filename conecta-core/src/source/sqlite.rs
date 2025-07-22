@@ -12,7 +12,13 @@ impl Source for SqliteSource {
     fn get_conn_string(&self) -> String {
         self.conn_string.clone()
     }
-    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64), is_last: bool) -> String {
+    fn wrap_query_with_bounds(
+        &self,
+        query: &str,
+        column: &str,
+        bounds: (i64, i64),
+        is_last: bool,
+    ) -> String {
         todo!()
     }
 

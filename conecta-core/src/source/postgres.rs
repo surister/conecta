@@ -4,7 +4,7 @@ use r2d2_postgres::postgres;
 use arrow::array::*;
 
 use postgres::types::Type;
-use postgres::{NoTls};
+use postgres::NoTls;
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 
 use sqlparser::ast::{Statement, TableFactor};
@@ -26,9 +26,19 @@ impl Source for PostgresSource {
     }
 
     // SQL creation methods.
-    fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64), is_last: bool) -> String {
+    fn wrap_query_with_bounds(
+        &self,
+        query: &str,
+        column: &str,
+        bounds: (i64, i64),
+        is_last: bool,
+    ) -> String {
         let last_char = {
-            if is_last { "<=" } else { "<" }
+            if is_last {
+                "<="
+            } else {
+                "<"
+            }
         };
 
         format!(
@@ -183,14 +193,9 @@ impl Source for PostgresSource {
 
     fn get_schema_of(&self, query: &str) -> Schema {
         let query = self.get_schema_query(query);
-        let conn = self.get_conn_string()
-            .parse()
-            .unwrap();
+        let conn = self.get_conn_string().parse().unwrap();
         let manager = PostgresConnectionManager::new(conn, NoTls);
-        let pool = r2d2::Pool::builder()
-            .max_size(5)
-            .build(manager)
-            .unwrap();
+        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
 
         let mut client = pool.get().expect("Could not connect to the database");
         let result = client.prepare(&query);

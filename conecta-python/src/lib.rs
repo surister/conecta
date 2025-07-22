@@ -4,7 +4,7 @@ use conecta_core::{make_record_batches, test_from_core};
 use std::sync::Arc;
 
 use pyo3::prelude::*;
-use pyo3_arrow::{PyTable};
+use pyo3_arrow::PyTable;
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]

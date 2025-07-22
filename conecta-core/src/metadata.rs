@@ -140,7 +140,13 @@ mod tests {
                 "some_metadata_query".to_string(),
             )
         }
-        fn wrap_query_with_bounds(&self, query: &str, column: &str, bounds: (i64, i64), is_last: bool) -> String {
+        fn wrap_query_with_bounds(
+            &self,
+            query: &str,
+            column: &str,
+            bounds: (i64, i64),
+            is_last: bool,
+        ) -> String {
             "wrapped()".to_string()
         }
         fn merge_queries(&self, queries: &Vec<String>) -> String {

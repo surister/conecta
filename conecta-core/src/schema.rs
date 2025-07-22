@@ -1,6 +1,5 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema};
 
-
 #[derive(Debug, Clone)]
 pub enum NativeType {
     // Primitive types
@@ -28,10 +27,10 @@ pub enum NativeType {
 
     // String types
     String,
-    
+
     // Time
     Date32,
-    Date64
+    Date64,
 }
 
 impl NativeType {
@@ -42,7 +41,10 @@ impl NativeType {
             NativeType::String => DataType::Utf8,
             NativeType::Date32 => DataType::Date32,
             _ => {
-                panic!("Native type to arrow not implemented. NativeType {:?}", self)
+                panic!(
+                    "Native type to arrow not implemented. NativeType {:?}",
+                    self
+                )
             }
         }
     }
@@ -57,11 +59,10 @@ pub struct Schema {
 impl Schema {
     pub fn to_arrow(self) -> ArrowSchema {
         ArrowSchema::new(
-            self
-                .columns
+            self.columns
                 .into_iter()
                 .map(|column| Field::new(column.name, column.data_type.to_arrow(), true))
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         )
     }
 }

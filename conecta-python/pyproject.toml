@@ -11,11 +11,17 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+]
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
 
 [dependency-groups]
 dev = [
+    "arro3-core>=0.5.1",
     "black>=25.1.0",
+    "nanoarrow>=0.7.0",
+    "polars>=1.31.0",
+    "pyarrow>=21.0.0",
 ]

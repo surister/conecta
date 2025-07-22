@@ -2,18 +2,16 @@
 # a dummy `sum_as_string` to be able to add docstring and typehints.
 import dataclasses
 import json
-from typing import Literal, Optional
+from typing import Literal, Optional, LiteralString
 
 from .conecta import sum_as_string as _sum_as_string
 from .conecta import create_partition_plan as _create_partition_plan
 from .conecta import read_sql as _read_sql
 
-import pyarrow as pa
 
 @dataclasses.dataclass
 class PartitionConfig:
-    """The partition plan that ``conecta`` will use to
-    perform the data load.
+    """The partition plan that ``conecta`` will use to perform the data load.
 
     Attributes:
         queries: The SQL queries provided by the user. If there is more than one,
@@ -36,6 +34,7 @@ class PartitionConfig:
     partition_range: tuple[int]
     needed_metadata_from_source: str
     query_partition_mode: str
+
 
 @dataclasses.dataclass
 class PartitionPlan:
@@ -67,6 +66,7 @@ class PartitionPlan:
         partition_config = d.pop('partition_config')
         return cls(**d, partition_config=PartitionConfig(**partition_config))
 
+
 def sum_as_string(a: int, b: int) -> str:
     """
     Python docstring go here.
@@ -91,13 +91,42 @@ def create_partition_plan(
     return PartitionPlan.from_dict(plan)
 
 
+
 def read_sql(
         conn: str,
         queries: list[str],
         partition_on: Optional[str] = None,
         partition_range: tuple = None,
-        partition_num: int = None):
-    return _read_sql(conn, queries, partition_on, partition_range, partition_num)
+        partition_num: int = None,
+        return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow'
+):
+    match return_backend:
+        case 'pyarrow' as p:
+            try:
+                import pyarrow as arrow
+            except ImportError as e:
+                raise ImportError(
+                    f'Return backend {p!r} needs the package \'pyarrow\','
+                    f' you can fix this with `pip install pyarrow`') from e
+        case 'arro3' as p:
+            try:
+                import arro3 as arrow
+            except ImportError as e:
+                raise ImportError(
+                    f'Return backend {p!r} needs the package \'arro3-core\','
+                    f' you can fix this with `pip install pyarrow`') from e
+        case 'nanoarrow' as p:
+            try:
+                import pyarrow as arrow
+            except ImportError as e:
+                raise ImportError(
+                    f'Return backend {p!r} needs the package \'nanoarrow\','
+                    f' you can fix this with `pip install pyarrow`') from e
+        case _:
+            raise ValueError(f'Return backend not supported.')
+
+    return _read_sql(conn, queries, partition_on, partition_range, partition_num, return_backend)
+
 
 # Todo: Add support for detecting bad arguments like 'return_type'
 # (which is connectorx API), and recommend the new name.

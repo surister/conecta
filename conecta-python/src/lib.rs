@@ -4,6 +4,7 @@ use conecta_core::{make_record_batches, test_from_core};
 use std::sync::Arc;
 
 use pyo3::prelude::*;
+use pyo3_arrow::error::PyArrowResult;
 use pyo3_arrow::PyTable;
 
 /// Formats the sum of two numbers as string.
@@ -38,7 +39,7 @@ fn create_partition_plan(
 }
 
 #[pyfunction]
-pub fn read_sql<'py>(
+pub fn read_sql(
     py: Python,
     // Source.
     connection_string: &str,
@@ -48,7 +49,10 @@ pub fn read_sql<'py>(
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
-) -> PyResult<PyObject> {
+
+    // Return configuration
+    return_backend: String
+) -> PyArrowResult<PyObject> {
     env_logger::init();
 
     let (arrays, schema) = py.allow_threads(|| {
@@ -71,7 +75,19 @@ pub fn read_sql<'py>(
             .collect(),
     );
 
-    Ok(PyTable::try_new(record_batches, Arc::new(schema.to_arrow()))?.to_pyarrow(py)?)
+    let table = PyTable::try_new(record_batches, Arc::new(schema.to_arrow()));
+
+    match return_backend.as_str() {
+        "arro3" => {
+            Ok(table?.to_arro3(py)?.into())
+        },
+        "nanoarrow" => {
+            Ok(table?.to_nanoarrow(py)?.into())
+        },
+        // We default to pyarrow, its also default on conecta-python
+        _ => Ok(table?.to_pyarrow(py)?.into())
+    }
+
 }
 
 /// A Python module implemented in Rust.

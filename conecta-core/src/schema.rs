@@ -34,7 +34,7 @@ pub enum NativeType {
 }
 
 impl NativeType {
-    fn to_arrow(self) -> DataType {
+    pub(crate) fn to_arrow(&self) -> DataType {
         match self {
             NativeType::I32 => DataType::Int32,
             NativeType::F64 => DataType::Float64,

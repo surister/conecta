@@ -53,7 +53,7 @@ pub fn read_sql(
     // Return configuration
     return_backend: String,
 ) -> PyArrowResult<PyObject> {
-    env_logger::init();
+    let _ = env_logger::try_init();
 
     let (arrays, schema) = py.allow_threads(|| {
         conecta_core::read_sql(

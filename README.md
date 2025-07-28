@@ -7,7 +7,7 @@
 | [License]
 
 
-Conecta is a library designed to load data from SQL databases into arrow with maximum 
+Conecta is a library designed to load data from SQL databases into [Arrow] with maximum 
 speed and memory efficiency by leveraging zero-copy and true concurrency in Python.
 
 
@@ -22,11 +22,10 @@ table = read_sql(
 ```
 
 This snippet will create a pool, launch 4 threads, send four different queries and
-stream the results to arrow. The core is written in Rust.
+stream the results back to arrow. The core is written in Rust.
 
 Conecta integrates natively to the arrow ecosystem, we support
-several arrow libraries: [pyarrow](https://pypi.org/project/pyarrow/),
-[arro3](https://pypi.org/project/arro3-core/) and [nanoarrow](https://pypi.org/project/nanoarrow/).
+several arrow libraries: [pyarrow], [arro3] and [nanoarrow].
 Additionally, you can create dataframes like Polars or Pandas.
 
 ```python
@@ -58,6 +57,12 @@ You can install it with `todo`
 ## When should you use `conecta`.
 
 ## How does conecta work.
+
+[Arrow]: https://arrow.apache.org/
+
+[pyarrow]: https://pypi.org/project/pyarrow/
+[arro3]: https://pypi.org/project/arro3-core/
+[nanoarrow]: https://pypi.org/project/nanoarrow/
 
 [Documentation]: https://conecta.surister.dev/
 [Releases]: https://github.com/surister/conecta/releases

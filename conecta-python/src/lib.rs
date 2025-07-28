@@ -51,7 +51,7 @@ pub fn read_sql(
     partition_num: Option<u16>,
 
     // Return configuration
-    return_backend: String
+    return_backend: String,
 ) -> PyArrowResult<PyObject> {
     env_logger::init();
 
@@ -65,7 +65,7 @@ pub fn read_sql(
         )
     });
 
-    let record_batches = make_record_batches(
+    let rbs = make_record_batches(
         arrays,
         schema
             .clone()
@@ -75,19 +75,29 @@ pub fn read_sql(
             .collect(),
     );
 
-    let table = PyTable::try_new(record_batches, Arc::new(schema.to_arrow()));
+    println!("record batch count {:?}", rbs.len());
 
-    match return_backend.as_str() {
-        "arro3" => {
-            Ok(table?.to_arro3(py)?.into())
-        },
-        "nanoarrow" => {
-            Ok(table?.to_nanoarrow(py)?.into())
-        },
-        // We default to pyarrow, its also default on conecta-python
-        _ => Ok(table?.to_pyarrow(py)?.into())
+    let mut total: usize = 0;
+    for rb in &rbs {
+        println!(
+            "{:?}, {:?}, {:?}",
+            rb.num_rows(),
+            rb.num_columns(),
+            rb.get_array_memory_size()
+        );
+        total += rb.get_array_memory_size();
     }
 
+    println!("{:?}", total,);
+
+    let table = PyTable::try_new(rbs, Arc::new(schema.to_arrow()));
+
+    match return_backend.as_str() {
+        "arro3" => Ok(table?.to_arro3(py)?.into()),
+        "nanoarrow" => Ok(table?.to_nanoarrow(py)?.into()),
+        // We default to pyarrow, its also default on conecta-python
+        _ => Ok(table?.to_pyarrow(py)?.into()),
+    }
 }
 
 /// A Python module implemented in Rust.

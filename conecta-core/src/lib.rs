@@ -9,17 +9,15 @@ use r2d2_postgres::PostgresConnectionManager;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
-pub mod debug;
 pub mod destination;
-pub mod logger;
+pub mod perf_logger;
 pub mod metadata;
 pub mod partition;
 pub mod schema;
 pub mod source;
 
-use crate::debug::Metadata;
 use crate::destination::get_arrow_builders;
-use crate::logger::log_memory_with_message;
+use crate::perf_logger::{log_memory_with_message, PerfLogger};
 use crate::metadata::create_partition_plan;
 use crate::partition::PartitionConfig;
 use crate::schema::NativeType;
@@ -106,37 +104,43 @@ pub fn read_sql(
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
-    let mut metadata = Metadata::new_started();
+    let mut perf_logger = PerfLogger::new_started();
+
     let partition_config = PartitionConfig::new(
         queries.clone(),
         partition_on,
         partition_num,
         partition_range,
     );
-    metadata.print_step("Validating user parameters");
+
+    perf_logger.log_checkpoint("Validating user parameters", false);
 
     let source = get_source(connection_string, None);
-    let queryplan = create_partition_plan(&source, partition_config);
-    metadata.print_step("Created query plan");
+    let partition_plan = create_partition_plan(&source, partition_config);
+    log::debug!("{:?}", partition_plan);
+    perf_logger.log_checkpoint("Created query plan", true);
+
     let manager = PostgresConnectionManager::new(connection_string.parse().unwrap(), NoTls);
     let pool = Pool::builder()
-        .max_size(queryplan.query_data.len() as u32)
+        .max_size(partition_plan.query_data.len() as u32)
         .build(manager)
         .expect("Could not create a connection");
 
     let schema = source.get_schema_of(queries.clone().get(0).unwrap());
 
-    let arrays: Vec<Vec<ArrayRef>> = queryplan
+    let arrays: Vec<Vec<ArrayRef>> = partition_plan
         .query_data
         .into_par_iter()
         .map(|query| {
             let mut client = pool.get().unwrap();
 
-            let rows: RowIter = client
+            let rows = client
                 .query_raw::<_, bool, _>(query.as_str(), vec![])
                 .expect("Query failed");
 
-            let mut builders: Vec<Box<dyn ArrayBuilder>> = get_arrow_builders(schema.clone());
+            let mut builders: Vec<Box<dyn ArrayBuilder>> = get_arrow_builders(&schema, 30000000);
+
+            println!("allocated x{:?}", 30000000);
 
             let column_types: Vec<NativeType> = schema
                 .columns
@@ -166,14 +170,11 @@ pub fn read_sql(
                 .map(|mut builder| builder.finish())
                 .collect::<Vec<ArrayRef>>();
             return arrays;
-            // return make_record_batch(
-            //     arrays,
-            //     schema.columns.iter().map(|col| col.name.clone()).collect()
-            // );
         })
         .collect::<Vec<_>>();
-    metadata.print_step("Finishing loading data");
-    log_memory_with_message("Data is loaded");
+
+    perf_logger.log_checkpoint("Finished loading data", true);
+    perf_logger.log_peak_memory();
 
     (arrays, schema)
 }

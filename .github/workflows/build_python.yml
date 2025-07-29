@@ -1,23 +1,24 @@
-name: ⚙🐍 Build conecta-python
+name: 🛠🐘🐍 Full build conecta-python
 on:
   # allows to be called from other workflow
   workflow_call:
 
   # manual deployment, sometimes we will want to update docs without releasing a new version
   workflow_dispatch:
-  # Only run on pushes to master that modify rust code in conecta-python.
-  push:
-    branches:
-      - master
-    paths:
-      - 'conecta-python/**.rs'
 
-  # Only run on Pull requests to master that modify rust code in conecta-python.
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'conecta-python/**.rs'
+#  # Only run on pushes to master that modify rust code in conecta-python.
+#  push:
+#    branches:
+#      - master
+#    paths:
+#      - 'conecta-python/**.rs'
+#
+#  # Only run on Pull requests to master that modify rust code in conecta-python.
+#  pull_request:
+#    branches:
+#      - master
+#    paths:
+#      - 'conecta-python/**.rs'
 
 permissions:
   contents: read
@@ -36,8 +37,11 @@ jobs:
             target: aarch64
           - runner: ubuntu-22.04
             target: armv7
-          - runner: ubuntu-22.04
-            target: s390x
+#
+#         error: failed to run custom build command for `psm v0.1.26`
+#          - runner: ubuntu-22.04
+#            target: s390x
+#
           - runner: ubuntu-22.04
             target: ppc64le
     steps:
@@ -128,9 +132,6 @@ jobs:
 
   sdist:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: conecta-python
     steps:
       - uses: actions/checkout@v4
       - name: Build sdist

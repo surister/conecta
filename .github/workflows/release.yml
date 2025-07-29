@@ -14,3 +14,4 @@ jobs:
 
   release_documentation:
     uses: ./.github/workflows/docs.yml
+    needs: release_python

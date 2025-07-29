@@ -25,9 +25,6 @@ permissions:
 jobs:
   linux:
     runs-on: ${{ matrix.platform.runner }}
-    defaults:
-      run:
-        working-directory: conecta-python
     strategy:
       matrix:
         platform:
@@ -50,8 +47,8 @@ jobs:
           python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
-
         with:
+          working-directory: conecta-python
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -59,9 +56,6 @@ jobs:
 
   musllinux:
     runs-on: ${{ matrix.platform.runner }}
-    defaults:
-      run:
-        working-directory: conecta-python
     strategy:
       matrix:
         platform:
@@ -81,6 +75,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: conecta-python
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -88,9 +83,6 @@ jobs:
 
   windows:
     runs-on: ${{ matrix.platform.runner }}
-    defaults:
-      run:
-        working-directory: conecta-python
     strategy:
       matrix:
         platform:
@@ -107,15 +99,13 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: conecta-python
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
-    defaults:
-      run:
-        working-directory: conecta-python
     strategy:
       matrix:
         platform:
@@ -131,6 +121,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: conecta-python
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -145,5 +136,6 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: conecta-python
           command: sdist
           args: --out dist

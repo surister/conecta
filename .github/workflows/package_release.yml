@@ -30,8 +30,8 @@ jobs:
             target: aarch64
           - runner: ubuntu-22.04
             target: armv7
-#          - runner: ubuntu-22.04
-#            target: s390x
+          #          - runner: ubuntu-22.04
+          #            target: s390x
           - runner: ubuntu-22.04
             target: ppc64le
     steps:
@@ -51,7 +51,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.platform.target }}
-          path: dist
+          path: conecta-python/dist
+          if-no-files-found: 'error'
 
   musllinux:
     runs-on: ${{ matrix.platform.runner }}
@@ -83,7 +84,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
-          path: dist
+          path: conecta-python/dist
+          if-no-files-found: 'error'
 
   windows:
     runs-on: ${{ matrix.platform.runner }}
@@ -111,7 +113,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.platform.target }}
-          path: dist
+          path: conecta-python/dist
+          if-no-files-found: 'error'
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
@@ -138,7 +141,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}
-          path: dist
+          path: conecta-python/dist
+          if-no-files-found: 'error'
 
   sdist:
     runs-on: ubuntu-latest
@@ -154,7 +158,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
-          path: dist
+          path: conecta-python/dist
+          if-no-files-found: 'error'
 
   release:
     name: Release

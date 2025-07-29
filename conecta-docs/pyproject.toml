@@ -9,4 +9,5 @@ dependencies = [
     "mkdocs-literate-nav>=0.6.2",
     "mkdocs-material>=9.6.16",
     "mkdocs-section-index>=0.3.10",
+    "mkdocstrings[python]>=0.30.0",
 ]

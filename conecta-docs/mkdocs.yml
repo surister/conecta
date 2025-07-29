@@ -1,5 +1,5 @@
 site_name: Conecta documentation
-watch: [../conecta-python/]
+watch: [./docs/]
 nav:
   - Project:
       - Overview: index.md

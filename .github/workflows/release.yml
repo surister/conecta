@@ -1,0 +1,16 @@
+name: Full release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release_python:
+    uses: ./.github/workflows/release_python.yml
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+  release_documentation:
+    uses: ./.github/workflows/docs.yml

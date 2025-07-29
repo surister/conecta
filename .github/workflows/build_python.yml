@@ -1,4 +1,4 @@
-name: 🛠🐘🐍 Full build conecta-python
+name: 🛠🐍 Full build conecta-python
 on:
   # allows to be called from other workflow
   workflow_call:

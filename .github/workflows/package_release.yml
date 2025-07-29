@@ -6,14 +6,9 @@
 name: 📦🐍 Build and Release Python package
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    tags:
-      - '*'
-  pull_request:
-  workflow_dispatch:
+  workflow_call: # allows to be called from other workflow
+  workflow_dispatch: # manual deployment, sometimes we will want to update docs without releasing a new version
+
 
 permissions:
   contents: read

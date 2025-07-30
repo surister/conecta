@@ -1,4 +1,3 @@
-use std::fmt::format;
 use peak_alloc::PeakAlloc;
 
 #[global_allocator]
@@ -38,7 +37,9 @@ impl PerfLogger {
         let memory = if with_memory {
             let string = format!("{}Mb RAM", PEAK_ALLOC.current_usage_as_mb());
             string
-        } else { String::new() };
+        } else {
+            String::new()
+        };
 
         log::debug!(
             "Checkpoint[{new_checkpoint}]: {message}, since Checkpoint[{last_checkpoint}]: {delta:?} | {memory}",
@@ -54,12 +55,12 @@ impl PerfLogger {
     pub fn log_elapsed(&self) {
         match self.start {
             None => panic!("Cannot print total duration without calling .start() first"),
-            Some(instant) => log::debug!("\nTotal elapsed: {:.2?}", instant.elapsed()),
+            Some(instant) => log::debug!("total_elapsed_data_loading: {:.2?}", instant.elapsed()),
         }
     }
 
     pub fn log_peak_memory(&self) {
-        log::debug!("Peak memory usage: {}MB", PEAK_ALLOC.peak_usage_as_mb())
+        log::debug!("peak_mem_usage: {}MB", PEAK_ALLOC.peak_usage_as_mb())
     }
     pub fn elapsed(&self) -> Duration {
         self.start.unwrap().elapsed()

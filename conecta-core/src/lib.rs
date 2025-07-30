@@ -6,20 +6,21 @@ use postgres::{NoTls, RowIter};
 use r2d2_postgres::r2d2::Pool;
 use r2d2_postgres::PostgresConnectionManager;
 
+use rayon::current_thread_index;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
 pub mod destination;
-pub mod perf_logger;
 pub mod metadata;
 pub mod partition;
+pub mod perf_logger;
 pub mod schema;
 pub mod source;
 
 use crate::destination::get_arrow_builders;
-use crate::perf_logger::{log_memory_with_message, PerfLogger};
 use crate::metadata::create_partition_plan;
 use crate::partition::PartitionConfig;
+use crate::perf_logger::{log_memory_with_message, PerfLogger};
 use crate::schema::NativeType;
 use crate::source::get_source;
 
@@ -134,13 +135,23 @@ pub fn read_sql(
         .map(|query| {
             let mut client = pool.get().unwrap();
 
+            let query_number =
+                client.query(format!("SELECT count(*) FROM ({:})", query).as_str(), &[]);
+            let count: i64 = query_number.unwrap().get(0).unwrap().get(0);
+
             let rows = client
                 .query_raw::<_, bool, _>(query.as_str(), vec![])
                 .expect("Query failed");
 
-            let mut builders: Vec<Box<dyn ArrayBuilder>> = get_arrow_builders(&schema, 30000000);
+            let mut builders: Vec<Box<dyn ArrayBuilder>> =
+                get_arrow_builders(&schema, count as usize);
 
-            println!("allocated x{:?}", 30000000);
+            log::debug!(
+                "thread-{}: allocated {:?}x{:?}",
+                current_thread_index().unwrap(),
+                builders.len(),
+                count
+            );
 
             let column_types: Vec<NativeType> = schema
                 .columns
@@ -174,6 +185,8 @@ pub fn read_sql(
         .collect::<Vec<_>>();
 
     perf_logger.log_checkpoint("Finished loading data", true);
+
+    perf_logger.log_elapsed();
     perf_logger.log_peak_memory();
 
     (arrays, schema)

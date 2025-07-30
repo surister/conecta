@@ -1,0 +1,41 @@
+name: Test python
+
+on:
+  # allows to be called from other workflow
+  workflow_call:
+
+  # manual deployment, sometimes we will want to update docs without releasing a new version
+  workflow_dispatch:
+  push:
+    paths:
+      - 'conecta-python/**.rs'
+    branches:
+      - master
+  pull_request:
+    paths:
+      - 'conecta-python/**.rs'
+    branches:
+      - master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup rust
+        working-directory: conecta-python
+        run: |
+          rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+
+      - run: cargo fmt --check
+        working-directory: conecta-python
+
+      - run: cargo test --verbose
+        working-directory: conecta-python

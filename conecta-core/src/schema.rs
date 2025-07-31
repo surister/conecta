@@ -1,6 +1,6 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NativeType {
     // Primitive types
     Bool,

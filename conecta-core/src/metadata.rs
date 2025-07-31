@@ -103,6 +103,7 @@ pub struct PartitionPlan {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::schema::Schema;
 
     #[derive(Debug)]
     struct DummySource;
@@ -158,6 +159,10 @@ mod tests {
         fn validate(&self) {
             todo!()
         }
+
+        fn get_schema_of(&self, query: &str) -> Schema {
+            todo!()
+        }
     }
 
     #[test]
@@ -175,7 +180,10 @@ mod tests {
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
         assert_eq!(query_plan.count, 10);
-        assert_eq!(query_plan.query_data.len(), partitions_num.unwrap().into())
+        assert_eq!(
+            query_plan.query_data.len(),
+            partitions_num.unwrap() as usize
+        )
     }
 
     #[test]

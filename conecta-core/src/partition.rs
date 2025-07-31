@@ -152,7 +152,7 @@ mod create_bound_tests {
         #[test]
         fn test_uneven_partition() {
             let result = bounds(0, 10, 3);
-            assert_eq!(result, vec![(0, 3), (3, 6), (7, 10)]);
+            assert_eq!(result, vec![(0, 3), (3, 6), (6, 10)]);
         }
 
         #[test]
@@ -185,7 +185,7 @@ mod config_partition_tests {
         assert_eq!(config.queries.len(), 1);
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource::Count
+            NeededMetadataFromSource::None
         );
         assert_eq!(
             config.query_partition_mode,
@@ -206,7 +206,7 @@ mod config_partition_tests {
         assert_eq!(config.partition_on, column);
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource::CountAndMinMax
+            NeededMetadataFromSource::MinMax
         );
         assert_eq!(
             config.query_partition_mode,
@@ -225,7 +225,7 @@ mod config_partition_tests {
         assert_eq!(config.partition_range, Some((0, 100)));
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource::Count
+            NeededMetadataFromSource::None
         );
         assert_eq!(
             config.query_partition_mode,

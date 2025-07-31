@@ -37,5 +37,5 @@ jobs:
       - run: cargo fmt --check
         working-directory: conecta-python
 
-      - run: cargo test --verbose
+      - run: cargo test --lib --bins --tests --verbose
         working-directory: conecta-python

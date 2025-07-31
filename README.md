@@ -1,4 +1,9 @@
 # Conecta - SQL to Arrow made easy.
+![PyPI - Version](https://img.shields.io/pypi/v/conecta)
+![PyPI - Status](https://img.shields.io/pypi/status/conecta)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsurister%2Fconecta%2Frefs%2Fheads%2Fmaster%2Fconecta-python%2Fpyproject.toml)
+
+[![Full release](https://github.com/surister/conecta/actions/workflows/release.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/release.yml)
 
 » [Documentation]
 | [Releases]
@@ -57,6 +62,23 @@ You can install it with `todo`
 ## When should you use `conecta`.
 
 ## How does conecta work.
+
+
+## Supported architectures
+
+Conecta is compiled in almost all popular architectures.
+
+Supported architectures:
+
+* linux: x86_64, x86, aarch64, armv7 and ppc64le
+* musllinux: x86_64, x86, aarch64, armv7
+* windows: x64 and x86
+* macos: x86_64 and aarch64
+
+
+Unsupported architectures:
+* linux: IBM s390x
+
 
 [Arrow]: https://arrow.apache.org/
 

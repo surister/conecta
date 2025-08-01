@@ -32,6 +32,7 @@ use arrow::datatypes::{Field, Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;
 
 use chrono::NaiveDate;
+use log::debug;
 
 pub fn test_from_core() -> i32 {
     3
@@ -146,9 +147,9 @@ pub fn read_sql(
             let mut builders: Vec<Box<dyn ArrayBuilder>> =
                 get_arrow_builders(&schema, count as usize);
 
-            log::debug!(
+            debug!(
                 "thread-{}: allocated {:?}x{:?}",
-                current_thread_index().unwrap(),
+                current_thread_index().unwrap_or(0),
                 builders.len(),
                 count
             );

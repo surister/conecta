@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 peak_alloc = "0.3.0"
 log = "0.4.27"
-env_logger = "0.11.8"
 
 arrow = { version = "55.2.0", features = ["prettyprint", "ffi"] }
 

@@ -458,7 +458,6 @@ version = "0.0.1"
 dependencies = [
  "arrow",
  "chrono",
- "env_logger",
  "log",
  "peak_alloc",
  "postgres",
@@ -474,6 +473,7 @@ version = "0.0.1"
 dependencies = [
  "conecta-core",
  "env_logger",
+ "log",
  "pyo3",
  "pyo3-arrow",
  "serde_json",

@@ -6,6 +6,7 @@ use std::sync::Arc;
 use pyo3::prelude::*;
 use pyo3_arrow::error::PyArrowResult;
 use pyo3_arrow::PyTable;
+use log::debug;
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]
@@ -74,21 +75,15 @@ pub fn read_sql(
             .map(|col| col.name)
             .collect(),
     );
-
-    println!("record batch count {:?}", rbs.len());
-
-    let mut total: usize = 0;
+    debug!("num_rows, num_columns, buffer_size_bytes");
     for rb in &rbs {
-        println!(
+        debug!(
             "{:?}, {:?}, {:?}",
             rb.num_rows(),
             rb.num_columns(),
             rb.get_array_memory_size()
         );
-        total += rb.get_array_memory_size();
     }
-
-    println!("{:?}", total,);
 
     let table = PyTable::try_new(rbs, Arc::new(schema.to_arrow()));
 

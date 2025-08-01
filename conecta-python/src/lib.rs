@@ -3,10 +3,10 @@ use conecta_core::source::get_source;
 use conecta_core::{make_record_batches, test_from_core};
 use std::sync::Arc;
 
+use log::debug;
 use pyo3::prelude::*;
 use pyo3_arrow::error::PyArrowResult;
 use pyo3_arrow::PyTable;
-use log::debug;
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]

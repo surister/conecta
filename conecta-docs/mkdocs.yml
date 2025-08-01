@@ -1,14 +1,19 @@
 site_name: Conecta documentation
+site_description: Documentation for Conecta, the fastest way to load data from sql databases to arrow.
+site_author: surister
 watch: [./docs/]
+
 nav:
   - Project:
-      - Overview: index.md
       - Setup: setup.md
       - Development: development.md
+  - Using the library:
+      - Read sql: read_sql.md
+      - Optimizing further: op
   - Source databases:
       - Postgres: databases/postgres.md
   - Arrow backends: arrow_backends.md
-  - Optimizing further: optimizing.md
+  - ConnectorX: connectorx.md
 
 theme:
   name: material

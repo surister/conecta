@@ -3,7 +3,11 @@
 ![PyPI - Status](https://img.shields.io/pypi/status/conecta)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsurister%2Fconecta%2Frefs%2Fheads%2Fmaster%2Fconecta-python%2Fpyproject.toml)
 
-[![Full release](https://github.com/surister/conecta/actions/workflows/release.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/release.yml)
+[![docs](https://github.com/surister/conecta/actions/workflows/docs.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/docs.yml)
+[![release](https://github.com/surister/conecta/actions/workflows/release.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/release.yml)
+[![Test core](https://github.com/surister/conecta/actions/workflows/test_core.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_core.yml)
+[![Test python](https://github.com/surister/conecta/actions/workflows/test_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_python.yml)
+[![Full build all targets](https://github.com/surister/conecta/actions/workflows/build_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/build_python.yml)
 
 » [Documentation]
 | [Releases]

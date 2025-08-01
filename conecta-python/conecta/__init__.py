@@ -9,6 +9,42 @@ from .conecta import create_partition_plan as _create_partition_plan
 from .conecta import read_sql as _read_sql
 
 
+def set_debug_log(mode=Literal['performance', 'lib', 'all']) -> None:
+    """
+     Sets the debugging log configuration of conecta. It configures the `RUST_LOG` environment
+     variable accordingly.
+
+    Args:
+        mode: The mode that will be used.
+
+    Modes:
+
+    * performance: Logs only show the conecta::perf_logger logger, helpful to debug
+     ram usage and timings of data load.
+    * lib: Logs everything that happens in conecta_core and conecta_python,
+     includes `conecta_performance`, helpful to debug the library, includes `partition plan`.
+    * all: Logs everything, other crates like sql parsing, http...
+
+    Returns:
+
+    """
+    import os
+
+    rust_log = ""
+
+    match mode:
+        case "performance":
+            rust_log = 'conecta_core::perf_logger=debug'
+        case "lib":
+            rust_log = 'conecta=debug,conecta_core=debug'
+        case "all":
+            rust_log = 'debug'
+        case _:
+            raise ValueError(f"mode {mode} does not exist")
+
+    os.environ['RUST_LOG'] = rust_log
+
+
 @dataclasses.dataclass
 class PartitionConfig:
     """The partition plan that ``conecta`` will use to perform the data load.
@@ -91,7 +127,6 @@ def create_partition_plan(
     return PartitionPlan.from_dict(plan)
 
 
-
 def read_sql(
         conn: str,
         queries: list[str],
@@ -126,7 +161,6 @@ def read_sql(
             raise ValueError(f'Return backend not supported.')
 
     return _read_sql(conn, queries, partition_on, partition_range, partition_num, return_backend)
-
 
 # Todo: Add support for detecting bad arguments like 'return_type'
 # (which is connectorx API), and recommend the new name.

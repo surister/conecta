@@ -2,11 +2,13 @@
 
 This is the tree of the project:
 
+```
 ├── benchmarks          - Project to benchmark conecta and other libraries.
 ├── conecta-core        - Core parts of conecta.
 ├── conecta-python      - Python bindings (where we use conecta-core code to create Python-ready methods).
-├── docs                - Documentation website.
+├── conecta-docs        - Documentation website.
 └── scripts             - Random scripts.
+```
 
 # Preparing environment
 

@@ -4,7 +4,7 @@ Conecta currently supports three arrow backends:
 
 [pyarrow], [arro3] and [nanoarrow]
 
-The default one is `pyarrow`, you can change it with `return_backend`:
+The default one is `pyarrow`, you can change it with `return_backend`
 ```python
 from conecta import read_sql
 
@@ -21,18 +21,19 @@ environment, otherwise an exception will be raised.
 
 ## Why different arrow backends?
 
-These libraries are implementations of the arrow specification, which is not tied to a programming
-language, each have different properties and advantages that you can take advantage of. If you
-come across an advantage that is not documented here, please contribute it!
+Libraries like `pyarrow` or `nanoarrow` are implementations of the arrow specification,
+which is not tied to a programming language, each have different properties and advantages
+that you can take advantage of. If you come across an advantage that is not documented here,
+please contribute it!
 
 ## `arro3`
 The package size is significantly smaller (2.2-2.9MB) than `pyarrow`'s (26-45MB), depending on the 
 system.
 
 It is less feature-complete but is perfectly fine if you are just loading data in e.g. Polars. Creating
-a polars dataframe from an `arro3` table can be measurably faster than `pyarrow`.
+a polars dataframe from an `arro3` table can be measurably faster than `pyarrow` **in some datasets**.
 
-Releases are typically faster and paired with the latest arrow version.
+Additionally, releases are typically faster and paired with the latest arrow version.
 
 ```python
 import timeit
@@ -64,13 +65,12 @@ In this benchmark arro3 is ~24% faster than pyarrow.
 
 ## `pyarrow`
 
-Is the most prominent one, feature-full and generally available in many environments, it is
-the default backend for compatability reasons.
+It Is the most popular one, feature-full and generally available in many environments, it is
+the default backend for compatability reasons. The main disadvantage is that it is very heavy 
+dependency, and you might not need all the features.
 
 ## `nanoarrow` 
 Returns an `ArrayStream` which your application might benefit from.
-
-
 
 [pyarrow]: https://pypi.org/project/pyarrow/
 [arro3]: https://pypi.org/project/arro3-core/

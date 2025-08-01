@@ -51,6 +51,9 @@ pub fn read_sql(
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 
+    // Extra configuration
+    max_pool_size: Option<u32>,
+
     // Return configuration
     return_backend: String,
 ) -> PyArrowResult<PyObject> {
@@ -63,6 +66,8 @@ pub fn read_sql(
             partition_on,
             partition_range,
             partition_num,
+            // Extra configuration
+            max_pool_size,
         )
     });
 

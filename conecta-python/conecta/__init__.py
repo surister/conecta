@@ -133,8 +133,15 @@ def read_sql(
         partition_on: Optional[str] = None,
         partition_range: tuple = None,
         partition_num: int = None,
-        return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow'
+        return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow',
+        extra_conf: dict = None
 ):
+    extra_conf_options = {"max_pool_size"}
+
+    if extra_conf:
+        # We clean extra_conf
+        extra_conf = {k: v for k, v in extra_conf.items() if k in extra_conf_options}
+
     match return_backend:
         case 'pyarrow' as p:
             try:
@@ -160,7 +167,14 @@ def read_sql(
         case _:
             raise ValueError(f'Return backend not supported.')
 
-    return _read_sql(conn, queries, partition_on, partition_range, partition_num, return_backend)
+    return _read_sql(conn,
+                     queries=queries,
+                     partition_on=partition_on,
+                     partition_range=partition_range,
+                     partition_num=partition_num,
+                     return_backend=return_backend,
+                     **extra_conf
+                     )
 
 # Todo: Add support for detecting bad arguments like 'return_type'
 # (which is connectorx API), and recommend the new name.

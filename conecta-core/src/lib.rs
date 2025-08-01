@@ -105,6 +105,9 @@ pub fn read_sql(
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
+
+    // Extra configuration.
+    max_pool_size: Option<u32>,
 ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
     let mut perf_logger = PerfLogger::new_started();
 
@@ -115,18 +118,37 @@ pub fn read_sql(
         partition_range,
     );
 
+    let manager = PostgresConnectionManager::new(connection_string.parse().unwrap(), NoTls);
+    let pool = Pool::builder()
+        .max_size(max_pool_size.unwrap_or_else(|| {
+            // If the user does not provide max_pool_size, we will set it to the number of threads
+            // that we will end up using, we cannot use any info from the partition_plan as it
+            // needs a pool. We will use a dirty but correct calculation of how many threads
+            // we will use: if the user passed one query, it will be `partition_num` or 1, otherwise
+            // it will the length of the queries (the user passed queries already partitioned)
+            match queries.len() {
+                1 => {
+                    // User passed partition_num, therefore, those are then number of threads.
+                    if let Some(n) = partition_num {
+                        n as u32
+                    } else {
+                        // User did not pass partition_num, only one thread will be used.
+                        1u32
+                    }
+                }
+                _ => queries.len() as u32,
+            }
+        }))
+        .build(manager)
+        .expect("Could not create a connection");
+
     perf_logger.log_checkpoint("Validating user parameters", false);
 
     let source = get_source(connection_string, None);
     let partition_plan = create_partition_plan(&source, partition_config);
-    log::debug!("{:?}", partition_plan);
-    perf_logger.log_checkpoint("Created query plan", true);
 
-    let manager = PostgresConnectionManager::new(connection_string.parse().unwrap(), NoTls);
-    let pool = Pool::builder()
-        .max_size(partition_plan.query_data.len() as u32)
-        .build(manager)
-        .expect("Could not create a connection");
+    debug!("{:?}", partition_plan);
+    perf_logger.log_checkpoint("Created query plan", true);
 
     let schema = source.get_schema_of(queries.clone().get(0).unwrap());
 

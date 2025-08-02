@@ -28,15 +28,15 @@ fn create_partition_plan(
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 ) -> PyResult<String> {
-    let partition_config =
-        PartitionConfig::new(queries, partition_on, partition_num, partition_range);
-
-    let source = get_source(connection_string, None);
-    let plan = conecta_core::metadata::create_partition_plan(&source, partition_config);
-    let json = serde_json::to_string(&plan).map_err(|e| {
-        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Serialization error: {}", e))
-    })?;
-    Ok(json)
+    // let partition_config =
+    //     PartitionConfig::new(queries, partition_on, partition_num, partition_range);
+    //
+    // let source = get_source(connection_string, None);
+    // let plan = conecta_core::metadata::create_partition_plan(&source, partition_config);
+    // let json = serde_json::to_string(&plan).map_err(|e| {
+    //     PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Serialization error: {}", e))
+    // })?;
+    Ok("s".to_ascii_lowercase())
 }
 
 #[pyfunction]

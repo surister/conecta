@@ -18,7 +18,7 @@ pub mod schema;
 pub mod source;
 
 use crate::destination::get_arrow_builders;
-use crate::metadata::create_partition_plan;
+use crate::metadata::{create_partition_plan, NeededMetadataFromSource};
 use crate::partition::PartitionConfig;
 use crate::perf_logger::{log_memory_with_message, PerfLogger};
 use crate::schema::NativeType;
@@ -145,7 +145,7 @@ pub fn read_sql(
     perf_logger.log_checkpoint("Validating user parameters", false);
 
     let source = get_source(connection_string, None);
-    let partition_plan = create_partition_plan(&source, partition_config);
+    let partition_plan = create_partition_plan(&source, partition_config, pool.clone());
 
     debug!("{:?}", partition_plan);
     perf_logger.log_checkpoint("Created query plan", true);
@@ -153,14 +153,23 @@ pub fn read_sql(
     let schema = source.get_schema_of(queries.clone().get(0).unwrap());
 
     let arrays: Vec<Vec<ArrayRef>> = partition_plan
-        .query_data
+        .data_queries
         .into_par_iter()
         .map(|query| {
+            let pool = pool.clone();
             let mut client = pool.get().unwrap();
 
-            let query_number =
-                client.query(format!("SELECT count(*) FROM ({:})", query).as_str(), &[]);
-            let count: i64 = query_number.unwrap().get(0).unwrap().get(0);
+            let count: i64;
+            match partition_plan.partition_config.needed_metadata_from_source {
+                NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count => {
+                    let count_query =
+                        client.query(format!("SELECT count(*) FROM ({:})", query).as_str(), &[]);
+                    count = count_query.unwrap().get(0).unwrap().get(0);
+                }
+                _ => {
+                    count = 0;
+                }
+            }
 
             let rows = client
                 .query_raw::<_, bool, _>(query.as_str(), vec![])

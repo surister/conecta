@@ -1,5 +1,8 @@
 use crate::partition::{created_bounded_queries, PartitionConfig};
 use crate::source::Source;
+use postgres::NoTls;
+use r2d2_postgres::r2d2::{Pool, PooledConnection};
+use r2d2_postgres::PostgresConnectionManager;
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -7,7 +10,6 @@ pub enum NeededMetadataFromSource {
     Count,
     MinMax,
     CountAndMinMax,
-    // The user has already provided both, or one but the destination does not need it.
     None,
 }
 
@@ -28,34 +30,40 @@ pub enum QueryPartitioningMode {
 pub fn create_partition_plan(
     source: &Box<dyn Source>,
     partition_config: PartitionConfig,
+    pool: Pool<PostgresConnectionManager<NoTls>>,
 ) -> PartitionPlan {
-    let query_data: Vec<String>;
+    let data_queries: Vec<String>;
 
+    // We set min/max as it might be needed for the count.
+    let (mut min_value, mut max_value) = match partition_config.partition_range {
+        Some((a, b)) => (Some(a), Some(b)),
+        None => (None, None),
+    };
+
+    // TODO: I'm not sure we need this anymore.
     let query = match partition_config.queries.len() {
-        1 => partition_config.queries.get(0).unwrap(),
+        1 => &partition_config.queries.get(0).unwrap(),
 
         // We always merge the metadata queries into one, to avoid the overhead of sending
         // several queries.
         _ => &source.merge_queries(&partition_config.queries),
     };
-    let (min, max, count, metadata_query) = source.fetch_metadata(
-        query,
-        partition_config.partition_on.as_deref(),
-        &partition_config.needed_metadata_from_source,
-        partition_config.partition_range,
-    );
 
-    // If the user didn't specify partition_range, we use the one fetched from fetch_metadata, this
-    // method might actually not fetch min/max if it is unnecessary, hence the `Option<i64>`.
-    let (min_value, max_value) = match partition_config.partition_range {
-        Some((a, b)) => (Some(a), Some(b)),
-        None => (min, max),
-    };
+    match partition_config.needed_metadata_from_source {
+        NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::MinMax => {
+            (min_value, max_value) = source.fetch_min_max(
+                query,
+                partition_config.partition_on.as_deref().unwrap(),
+                pool,
+            );
+        }
+        _ => {}
+    }
 
     match partition_config.query_partition_mode {
         QueryPartitioningMode::OnePartitionedQuery => {
             // Create the bounded queries.
-            query_data = created_bounded_queries(
+            data_queries = created_bounded_queries(
                 source,
                 partition_config.queries[0].as_str(),
                 &partition_config.partition_on.clone().unwrap(),
@@ -64,39 +72,38 @@ pub fn create_partition_plan(
                 max_value.expect("should have a valid max at this point"),
             )
         }
+
         // If we don't need to create any query (by partitioning it), we just set query_data
         // to whatever query(s) the user provided.
-        _ => query_data = Vec::from(partition_config.queries.clone()),
+        _ => data_queries = Vec::from(partition_config.queries.clone()),
     }
-
-    let partition_plan = PartitionPlan {
+    // todo: remove or followup.
+    let counts = vec![];
+    PartitionPlan {
         min_value,
         max_value,
-        count,
-        metadata_query,
-        query_data,
+        counts,
+        metadata_query: "fake".to_string(),
+        data_queries,
         partition_config,
-    };
-    partition_plan
+    }
 }
-
-/// Represents the metadata that the `Source`s will request before creating partitions.
 
 #[derive(Debug, Serialize)]
 pub struct PartitionPlan {
     pub min_value: Option<i64>,
     pub max_value: Option<i64>,
 
-    /// Total count of rows, obtained with `metadata_query`
-    pub count: i64,
+    /// Total count of rows per partition. i.e. [10_000, 20_000]
+    pub counts: Vec<i64>,
 
     /// The query that will be used to get metadata, count and/or min & max.
     pub metadata_query: String,
 
-    /// The query that will be used to fetch the data, with partition included if requested.
-    pub query_data: Vec<String>,
+    /// The query(s) that will be used to fetch the data, with partition included if requested.
+    pub data_queries: Vec<String>,
 
-    /// The configuration used to generate the QueryPlan. It is validated users input.
+    /// The configuration used to generate the QueryPlan. It is validated user's input.
     pub partition_config: PartitionConfig,
 }
 
@@ -163,6 +170,28 @@ mod tests {
         fn get_schema_of(&self, query: &str) -> Schema {
             todo!()
         }
+
+        fn fetch_min_max(
+            &self,
+            query: &str,
+            column: &str,
+            pool: PooledConnection<PostgresConnectionManager<NoTls>>,
+        ) -> (Option<i64>, Option<i64>) {
+            todo!()
+        }
+
+        fn fetch_counts(
+            &self,
+            queries: &Vec<String>,
+            min: Option<i64>,
+            max: Option<i64>,
+        ) -> Vec<i64> {
+            todo!()
+        }
+
+        fn get_min_max_query(&self, query: &str, col: &str) -> String {
+            todo!()
+        }
     }
 
     #[test]
@@ -179,9 +208,9 @@ mod tests {
         let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
-        assert_eq!(query_plan.count, 10);
+        assert_eq!(query_plan.counts, 10);
         assert_eq!(
-            query_plan.query_data.len(),
+            query_plan.data_queries.len(),
             partitions_num.unwrap() as usize
         )
     }
@@ -201,9 +230,9 @@ mod tests {
         let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
-        assert_eq!(query_plan.count, 10);
+        assert_eq!(query_plan.counts, 10);
         assert_eq!(
-            query_plan.query_data.len() as i16,
+            query_plan.data_queries.len() as i16,
             partitions_num.unwrap() as i16
         )
     }
@@ -222,8 +251,8 @@ mod tests {
         let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
-        assert_eq!(query_plan.count, 10);
-        assert_eq!(query_plan.query_data.len(), 1)
+        assert_eq!(query_plan.counts, 10);
+        assert_eq!(query_plan.data_queries.len(), 1)
     }
     #[test]
     fn test_create_query_plan_unpartitioned_single_query_ranged() {
@@ -241,8 +270,8 @@ mod tests {
         println!("{:#?}", query_plan);
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
-        assert_eq!(query_plan.count, 10);
-        assert_eq!(query_plan.query_data.len(), 1)
+        assert_eq!(query_plan.counts, 10);
+        assert_eq!(query_plan.data_queries.len(), 1)
     }
 
     #[test]
@@ -263,7 +292,7 @@ mod tests {
         let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
-        assert_eq!(query_plan.count, 10);
-        assert_eq!(query_plan.query_data.len(), 2)
+        assert_eq!(query_plan.counts, 10);
+        assert_eq!(query_plan.data_queries.len(), 2)
     }
 }

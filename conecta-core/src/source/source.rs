@@ -1,6 +1,10 @@
 use crate::metadata::NeededMetadataFromSource;
 use crate::schema::Schema;
+use postgres::NoTls;
+use r2d2_postgres::r2d2::PooledConnection;
+use r2d2_postgres::PostgresConnectionManager;
 use std::fmt::Debug;
+use std::format;
 
 pub trait Source: Debug + Send + Sync {
     /// Getter that returns the connection_string.
@@ -53,6 +57,15 @@ pub trait Source: Debug + Send + Sync {
         partition_range: Option<(i64, i64)>,
     ) -> (Option<i64>, Option<i64>, i64, String);
 
+    fn fetch_min_max(
+        &self,
+        query: &str,
+        column: &str,
+        pool: PooledConnection<PostgresConnectionManager<NoTls>>,
+    ) -> (Option<i64>, Option<i64>);
+
+    fn fetch_counts(&self, queries: &Vec<String>, min: Option<i64>, max: Option<i64>) -> Vec<i64>;
+
     /// Lets database sources to implement extra validation, most sources
     /// will implement this and do nothing.
     fn validate(&self);
@@ -60,4 +73,5 @@ pub trait Source: Debug + Send + Sync {
     fn get_schema_of(&self, query: &str) -> Schema;
 
     fn send_query(&self, query: &str) {}
+    fn get_min_max_query(&self, query: &str, col: &str) -> String;
 }

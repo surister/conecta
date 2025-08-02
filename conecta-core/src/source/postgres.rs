@@ -5,8 +5,8 @@ use arrow::array::*;
 
 use postgres::types::Type;
 use postgres::NoTls;
+use r2d2_postgres::r2d2::PooledConnection;
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
-
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
@@ -94,6 +94,13 @@ impl Source for PostgresSource {
         panic!("Could not extract table_name")
     }
 
+    fn get_min_max_query(&self, query: &str, col: &str) -> String {
+        format!(
+            "SELECT MIN({col})::bigint, \
+                    MAX({col})::bigint \
+             FROM ({query})",
+        )
+    }
     fn get_metadata_query(
         &self,
         query: &str,
@@ -106,13 +113,7 @@ impl Source for PostgresSource {
         match needed_metadata_from_source {
             NeededMetadataFromSource::MinMax => {
                 let col = column.expect("Trying to use column without specifying column");
-                format!(
-                    "SELECT MIN({col})::bigint, \
-                            MAX({col})::bigint \
-                    FROM {table_name}",
-                    col = col,
-                    table_name = table_name
-                )
+                "".to_ascii_lowercase()
             }
             NeededMetadataFromSource::CountAndMinMax => {
                 let col = column.expect("Trying to use column without specifying column");
@@ -189,6 +190,22 @@ impl Source for PostgresSource {
             NeededMetadataFromSource::None => (None, None, 0, metadata_query),
         }
     }
+
+    fn fetch_min_max(
+        &self,
+        query: &str,
+        column: &str,
+        mut pool: PooledConnection<PostgresConnectionManager<NoTls>>,
+    ) -> (Option<i64>, Option<i64>) {
+        let min_max_query = self.get_min_max_query(query, column);
+        let result = pool.query_one(&min_max_query, &[]).expect("Could not fetch min/max");
+        (Some(result.get(0)), Some(result.get(1)))
+    }
+
+    fn fetch_counts(&self, queries: &Vec<String>, min: Option<i64>, max: Option<i64>) -> Vec<i64> {
+        todo!()
+    }
+
     fn validate(&self) {}
 
     fn get_schema_of(&self, query: &str) -> Schema {

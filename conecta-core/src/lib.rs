@@ -145,7 +145,7 @@ pub fn read_sql(
     perf_logger.log_checkpoint("Validating user parameters", false);
 
     let source = get_source(connection_string, None);
-    let partition_plan = create_partition_plan(&source, partition_config);
+    let partition_plan = create_partition_plan(&source, partition_config, pool.get().unwrap());
 
     debug!("{:?}", partition_plan);
     perf_logger.log_checkpoint("Created query plan", true);
@@ -153,7 +153,7 @@ pub fn read_sql(
     let schema = source.get_schema_of(queries.clone().get(0).unwrap());
 
     let arrays: Vec<Vec<ArrayRef>> = partition_plan
-        .query_data
+        .data_queries
         .into_par_iter()
         .map(|query| {
             let mut client = pool.get().unwrap();

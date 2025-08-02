@@ -60,15 +60,9 @@ impl PartitionConfig {
 
         let needed_metadata_from_source = {
             if partition_range.is_none() && partition_num.is_some() && partition_on.is_some() {
-                // // We'd typically do Count here, but it seems that there is no benefit in arrow
-                // // to know the count beforehand
-                // NeededMetadataFromSource::CountAndMinMax
-                NeededMetadataFromSource::MinMax
+                NeededMetadataFromSource::CountAndMinMax
             } else {
-                // We'd typically do Count here, but it seems that there is no benefit in arrow
-                // to know the count beforehand
-                //NeededMetadataFromSource::Count
-                NeededMetadataFromSource::None
+                NeededMetadataFromSource::Count
             }
         };
 

@@ -1,6 +1,10 @@
 use crate::metadata::NeededMetadataFromSource;
 use crate::schema::Schema;
+use postgres::NoTls;
+use r2d2_postgres::r2d2::{Pool, PooledConnection};
+use r2d2_postgres::PostgresConnectionManager;
 use std::fmt::Debug;
+use std::format;
 
 pub trait Source: Debug + Send + Sync {
     /// Getter that returns the connection_string.
@@ -33,25 +37,12 @@ pub trait Source: Debug + Send + Sync {
     // TODO: Check if this work on more complex queries like CTEs
     fn get_table_name(&self, query: &str) -> String;
 
-    /// Returns the SQL query that will be used to get metadata: min, max and/or count, depending
-    /// on `needed_metadata_from_source`.
-    fn get_metadata_query(
+    fn fetch_min_max(
         &self,
         query: &str,
-        column: Option<&str>,
-        needed_metadata_from_source: &NeededMetadataFromSource,
-        partition_range: Option<(i64, i64)>,
-    ) -> String;
-
-    /// Runs the query created from `get_metadata_query` and parses its results.
-    /// It's source dependant.
-    fn fetch_metadata(
-        &self,
-        query: &str,
-        column: Option<&str>,
-        needed_metadata: &NeededMetadataFromSource,
-        partition_range: Option<(i64, i64)>,
-    ) -> (Option<i64>, Option<i64>, i64, String);
+        column: &str,
+        pool: Pool<PostgresConnectionManager<NoTls>>,
+    ) -> (Option<i64>, Option<i64>);
 
     /// Lets database sources to implement extra validation, most sources
     /// will implement this and do nothing.
@@ -60,4 +51,5 @@ pub trait Source: Debug + Send + Sync {
     fn get_schema_of(&self, query: &str) -> Schema;
 
     fn send_query(&self, query: &str) {}
+    fn get_min_max_query(&self, query: &str, col: &str) -> String;
 }

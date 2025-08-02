@@ -5,8 +5,8 @@ use arrow::array::*;
 
 use postgres::types::Type;
 use postgres::NoTls;
+use r2d2_postgres::r2d2::{Pool, PooledConnection};
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
-
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
@@ -94,101 +94,28 @@ impl Source for PostgresSource {
         panic!("Could not extract table_name")
     }
 
-    fn get_metadata_query(
-        &self,
-        query: &str,
-        column: Option<&str>,
-        needed_metadata_from_source: &NeededMetadataFromSource,
-        partition_range: Option<(i64, i64)>,
-    ) -> String {
-        let table_name = self.get_table_name(query);
-
-        match needed_metadata_from_source {
-            NeededMetadataFromSource::MinMax => {
-                let col = column.expect("Trying to use column without specifying column");
-                format!(
-                    "SELECT MIN({col})::bigint, \
-                            MAX({col})::bigint \
-                    FROM {table_name}",
-                    col = col,
-                    table_name = table_name
-                )
-            }
-            NeededMetadataFromSource::CountAndMinMax => {
-                let col = column.expect("Trying to use column without specifying column");
-                format!(
-                    "SELECT COUNT(*)::bigint, \
-                        MIN({col})::bigint, \
-                        MAX({col})::bigint \
-                    FROM {table_name}",
-                    col = col,
-                    table_name = table_name
-                )
-            }
-            NeededMetadataFromSource::Count => {
-                let mut query = format!("SELECT COUNT(*)::bigint FROM ({query})");
-
-                // If partition_range is specified by the user, we add the 'where' part.
-                if let Some((min, max)) = partition_range {
-                    let col = column.expect("Trying to use column without specifying column");
-                    query.push_str(
-                        format!(
-                            " WHERE {col} > {min} and {col} < {max}",
-                            col = col,
-                            min = min,
-                            max = max
-                        )
-                        .as_str(),
-                    );
-                }
-                query
-            }
-            NeededMetadataFromSource::None => {
-                // Fixme: Ideally we skip the metadata fetching process
-                "select 1".to_string()
-            }
-        }
+    fn get_min_max_query(&self, query: &str, col: &str) -> String {
+        format!(
+            "SELECT MIN({col})::bigint, \
+                    MAX({col})::bigint \
+             FROM ({query})",
+        )
     }
 
-    fn fetch_metadata(
+    fn fetch_min_max(
         &self,
         query: &str,
-        column: Option<&str>,
-        needed_metadata: &NeededMetadataFromSource,
-        partition_range: Option<(i64, i64)>,
-    ) -> (Option<i64>, Option<i64>, i64, String) {
-        let conn = self.get_conn_string().parse().unwrap();
-        let manager = PostgresConnectionManager::new(conn, NoTls);
-
-        //  todo careful here, max_size will have to be the size of the total partition.
-        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
-
-        let mut client = pool.get().expect("Could not connect to the database");
-
-        let metadata_query =
-            self.get_metadata_query(query, column, needed_metadata, partition_range);
-
-        let result = client
-            .query_one(metadata_query.as_str(), &[])
-            .expect("TODO: panic message");
-
-        match needed_metadata {
-            NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count => (
-                result.try_get(1).ok(),
-                result.try_get(2).ok(),
-                result.get(0),
-                metadata_query,
-            ),
-            NeededMetadataFromSource::MinMax => (
-                result.try_get(0).ok(),
-                result.try_get(1).ok(),
-                0,
-                metadata_query,
-            ),
-            // Fixme, make count option
-            NeededMetadataFromSource::None => (None, None, 0, metadata_query),
-        }
+        column: &str,
+        mut pool: Pool<PostgresConnectionManager<NoTls>>,
+    ) -> (Option<i64>, Option<i64>) {
+        let mut pool = pool.get().unwrap();
+        let min_max_query = self.get_min_max_query(query, column);
+        let result = pool
+            .query_one(&min_max_query, &[])
+            .expect("Could not fetch min/max");
+        (Some(result.get(0)), Some(result.get(1)))
     }
+
     fn validate(&self) {}
 
     fn get_schema_of(&self, query: &str) -> Schema {

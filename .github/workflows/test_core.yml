@@ -1,4 +1,4 @@
-name: Test core
+name: Test conecta-core
 
 on:
   # allows to be called from other workflow

@@ -1,4 +1,4 @@
-name: 🖺⬆ Documentation continuous delivery
+name: 🖺⬆ Docs
 on:
   workflow_call: # allows to be called from other workflow
   workflow_dispatch: # manual deployment, sometimes we will want to update docs without releasing a new version

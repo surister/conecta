@@ -1,4 +1,4 @@
-name: Test python
+name: Test conecta-python
 
 on:
   # allows to be called from other workflow

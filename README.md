@@ -60,6 +60,15 @@ df = pl.from_arrow(table)
 df = table.to_pandas()
 ```
 
+## Features:
+
+* Connection pooling
+* Real multithreading
+* Client-based query partition
+
+Supported sources:
+* Postgres: [postgres_docs]
+
 ## How to install.
 You can install it with `todo`
 
@@ -95,3 +104,5 @@ Unsupported architectures:
 [Issues]: https://github.com/surister/conecta/issues
 [Repository]: https://github.com/surister/conecta/
 [License]: https://github.com/surister/conecta/blob/master/LICENSE.md
+
+[postgres_docs]: https://conecta.surister.dev/databases/postgres/

@@ -3,9 +3,13 @@ import dataclasses
 import time
 import re
 import subprocess
+import shutil
 
 import tqdm
 
+
+def get_uv_path() -> str:
+    return shutil.which("uv")
 
 @dataclasses.dataclass
 class Library:
@@ -162,7 +166,7 @@ def run_case(case: BenchCase) -> BenchCaseResult:
     """
     t = time.time()
     p = subprocess.run(
-        ['uv', 'run', '--with', ",".join([case.library.name, *case.library.extra_deps]), 'python',
+        [get_uv_path(), 'run', '--with', ",".join([case.library.name, *case.library.extra_deps]), 'python',
          '-c', case.runnable_func()],
         env=case.environment,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE

@@ -136,14 +136,19 @@ def read_sql(
         return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow',
         extra_conf: dict = None
 ):
-    extra_conf_options = {"max_pool_size"}
+    extra_conf_options = {"max_pool_size", "disable_preallocation"}
 
+    default_conf = {
+        'max_pool_size': None,
+        'disable_preallocation': False
+    }
+    
     if extra_conf is None:
         # Default values for extra_conf, otherwise we err when calling the rust
         # generated method.
-        extra_conf = {
-            'max_pool_size': None
-        }
+        extra_conf = {}
+
+    extra_conf = default_conf | extra_conf
 
     if extra_conf:
         # if extra_conf parameters are not defined in extra_conf_options, strip them.

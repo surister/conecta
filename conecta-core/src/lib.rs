@@ -108,6 +108,7 @@ pub fn read_sql(
 
     // Extra configuration.
     max_pool_size: Option<u32>,
+    disable_preallocation: bool,
 ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
     let mut perf_logger = PerfLogger::new_started();
 
@@ -161,7 +162,9 @@ pub fn read_sql(
 
             let count: i64;
             match partition_plan.partition_config.needed_metadata_from_source {
-                NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count => {
+                NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count
+                    if !disable_preallocation =>
+                {
                     let count_query =
                         client.query(format!("SELECT count(*) FROM ({:})", query).as_str(), &[]);
                     count = count_query.unwrap().get(0).unwrap().get(0);
@@ -170,7 +173,6 @@ pub fn read_sql(
                     count = 0;
                 }
             }
-
             let rows = client
                 .query_raw::<_, bool, _>(query.as_str(), vec![])
                 .expect("Query failed");

@@ -53,6 +53,7 @@ pub fn read_sql(
 
     // Extra configuration
     max_pool_size: Option<u32>,
+    disable_preallocation: bool,
 
     // Return configuration
     return_backend: String,
@@ -68,6 +69,7 @@ pub fn read_sql(
             partition_num,
             // Extra configuration
             max_pool_size,
+            disable_preallocation,
         )
     });
 

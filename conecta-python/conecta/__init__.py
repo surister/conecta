@@ -138,8 +138,15 @@ def read_sql(
 ):
     extra_conf_options = {"max_pool_size"}
 
+    if extra_conf is None:
+        # Default values for extra_conf, otherwise we err when calling the rust
+        # generated method.
+        extra_conf = {
+            'max_pool_size': None
+        }
+
     if extra_conf:
-        # We clean extra_conf
+        # if extra_conf parameters are not defined in extra_conf_options, strip them.
         extra_conf = {k: v for k, v in extra_conf.items() if k in extra_conf_options}
 
     match return_backend:

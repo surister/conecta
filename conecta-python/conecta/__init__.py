@@ -142,7 +142,7 @@ def read_sql(
         'max_pool_size': None,
         'disable_preallocation': False
     }
-    
+
     if extra_conf is None:
         # Default values for extra_conf, otherwise we err when calling the rust
         # generated method.

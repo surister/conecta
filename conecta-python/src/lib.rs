@@ -42,10 +42,10 @@ fn create_partition_plan(
 #[pyfunction]
 pub fn read_sql(
     py: Python,
-    // Source.
+    // Source
     connection_string: &str,
 
-    // Partition Configuration.
+    // Partition Configuration
     queries: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
@@ -82,6 +82,7 @@ pub fn read_sql(
             .map(|col| col.name)
             .collect(),
     );
+
     debug!("num_rows, num_columns, buffer_size_bytes");
     for rb in &rbs {
         debug!(

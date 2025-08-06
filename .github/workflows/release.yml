@@ -11,7 +11,3 @@ jobs:
       contents: write
       id-token: write
       attestations: write
-
-  release_documentation:
-    uses: ./.github/workflows/docs.yml
-    needs: release_python

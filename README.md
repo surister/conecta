@@ -65,6 +65,7 @@ df = table.to_pandas()
 * Connection pooling
 * Real multithreading
 * Client-based query partition
+* Utilities like: sql bind parameters
 
 Supported sources:
 * Postgres: [postgres_docs]

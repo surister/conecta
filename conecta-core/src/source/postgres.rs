@@ -5,13 +5,12 @@ use arrow::array::*;
 
 use postgres::types::Type;
 use postgres::NoTls;
-use r2d2_postgres::r2d2::{Pool, PooledConnection};
+use r2d2_postgres::r2d2::{Pool};
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use crate::metadata::NeededMetadataFromSource;
 use crate::schema::{Column, NativeType, Schema};
 use crate::source::source::Source;
 
@@ -149,6 +148,10 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::CHAR | Type::TEXT => NativeType::String,
         Type::BPCHAR => NativeType::String,
         Type::DATE => NativeType::Date32,
+
+        // Should we have a type for
+        Type::TIMESTAMP => NativeType::TimestampWithoutTimeZone,
+        // Type::TIMESTAMPTZ => NativeType::TimestampWithTimeZone,
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

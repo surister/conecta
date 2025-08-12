@@ -27,11 +27,12 @@ use crate::source::get_source;
 use arrow::array::{
     ArrayBuilder, ArrayRef, Date32Builder, Float32Builder, Float64Builder, Int32Builder,
     StringBuilder,
+    TimestampMicrosecondBuilder,
 };
 use arrow::datatypes::{Field, Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 use log::debug;
 
 pub fn test_from_core() -> i32 {
@@ -59,7 +60,7 @@ pub fn make_record_batch(arrays: Vec<ArrayRef>, col_names: Vec<String>) -> Recor
 
     let schema = Arc::new(Schema::new(fields));
     RecordBatch::try_new(SchemaRef::from(schema.clone()), arrays)
-        .expect("Failed to create RecordBatch sexy")
+        .expect("Failed to create RecordBatch")
 }
 
 macro_rules! append_column_value {
@@ -201,6 +202,9 @@ pub fn read_sql(
                         NativeType::I32 => Int32Builder, i32, | v| v,
                         NativeType::F32 => Float32Builder, f32, | v | v,
                         NativeType::F64 => Float64Builder, f64, | v | v,
+                        NativeType::TimestampWithoutTimeZone => TimestampMicrosecondBuilder, NaiveDateTime, | v:NaiveDateTime | {
+                            v.and_utc().timestamp_micros()
+                        },
                         NativeType::Date32 => Date32Builder, NaiveDate, |v: NaiveDate|{
                             let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
                             (v - epoch).num_days() as i32

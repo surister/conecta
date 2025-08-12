@@ -42,7 +42,7 @@ impl Source for PostgresSource {
         };
 
         format!(
-            "select * from ({query}) where {column} >= {start:?} and {column} {last_char} {stop:?}",
+            "select * from ({query}) as t_inner where {column} >= {start:?} and {column} {last_char} {stop:?}",
             query = query,
             column = column,
             start = bounds.0,
@@ -67,7 +67,7 @@ impl Source for PostgresSource {
     }
 
     fn get_schema_query(&self, query: &str) -> String {
-        format!("select * from ({}) limit 0", query)
+        format!("select * from ({}) as t limit 0", query)
     }
 
     fn get_table_name(&self, query: &str) -> String {
@@ -98,7 +98,7 @@ impl Source for PostgresSource {
         format!(
             "SELECT MIN({col})::bigint, \
                     MAX({col})::bigint \
-             FROM ({query})",
+             FROM ({query}) as t",
         )
     }
 

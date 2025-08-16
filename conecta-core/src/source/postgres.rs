@@ -5,13 +5,12 @@ use arrow::array::*;
 
 use postgres::types::Type;
 use postgres::NoTls;
-use r2d2_postgres::r2d2::{Pool, PooledConnection};
+use r2d2_postgres::r2d2::Pool;
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use crate::metadata::NeededMetadataFromSource;
 use crate::schema::{Column, NativeType, Schema};
 use crate::source::source::Source;
 
@@ -42,7 +41,7 @@ impl Source for PostgresSource {
         };
 
         format!(
-            "select * from ({query}) where {column} >= {start:?} and {column} {last_char} {stop:?}",
+            "select * from ({query}) as t_inner where {column} >= {start:?} and {column} {last_char} {stop:?}",
             query = query,
             column = column,
             start = bounds.0,
@@ -67,7 +66,7 @@ impl Source for PostgresSource {
     }
 
     fn get_schema_query(&self, query: &str) -> String {
-        format!("select * from ({}) limit 0", query)
+        format!("select * from ({}) as t limit 0", query)
     }
 
     fn get_table_name(&self, query: &str) -> String {
@@ -98,7 +97,7 @@ impl Source for PostgresSource {
         format!(
             "SELECT MIN({col})::bigint, \
                     MAX({col})::bigint \
-             FROM ({query})",
+             FROM ({query}) as t",
         )
     }
 
@@ -149,6 +148,10 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::CHAR | Type::TEXT => NativeType::String,
         Type::BPCHAR => NativeType::String,
         Type::DATE => NativeType::Date32,
+
+        // Should we have a type for
+        Type::TIMESTAMP => NativeType::TimestampWithoutTimeZone,
+        // Type::TIMESTAMPTZ => NativeType::TimestampWithTimeZone,
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

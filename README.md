@@ -1,19 +1,22 @@
 # Conecta - SQL to Arrow made easy.
-![PyPI - Version](https://img.shields.io/pypi/v/conecta)
-![PyPI - Status](https://img.shields.io/pypi/status/conecta)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsurister%2Fconecta%2Frefs%2Fheads%2Fmaster%2Fconecta-python%2Fpyproject.toml)
-
-[![docs](https://github.com/surister/conecta/actions/workflows/docs.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/docs.yml)
-[![release](https://github.com/surister/conecta/actions/workflows/release.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/release.yml)
-[![Test core](https://github.com/surister/conecta/actions/workflows/test_core.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_core.yml)
-[![Test python](https://github.com/surister/conecta/actions/workflows/test_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_python.yml)
-[![Full build all targets](https://github.com/surister/conecta/actions/workflows/build_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/build_python.yml)
 
 » [Documentation]
 | [Releases]
 | [Issues]
 | [Repository]
 | [License]
+
+![PyPI - Version](https://img.shields.io/pypi/v/conecta)
+![PyPI - Status](https://img.shields.io/pypi/status/conecta)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsurister%2Fconecta%2Frefs%2Fheads%2Fmaster%2Fconecta-python%2Fpyproject.toml)
+
+[![docs](https://github.com/surister/conecta/actions/workflows/docs.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/docs.yml)
+[![Full build all targets](https://github.com/surister/conecta/actions/workflows/build_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/build_python.yml)
+[![release](https://github.com/surister/conecta/actions/workflows/release.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/release.yml)
+
+[![Test core](https://github.com/surister/conecta/actions/workflows/test_core.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_core.yml)
+[![Test python](https://github.com/surister/conecta/actions/workflows/test_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_python.yml)
+
 
 
 Conecta is a library designed to load data from SQL databases into [Arrow] with maximum 
@@ -71,9 +74,11 @@ Supported sources:
 * Postgres: [postgres_docs]
 
 ## How to install.
-You can install it with `todo`
+You can get started by running `pip install conecta`
 
 ## When should you use `conecta`.
+
+
 
 ## How does conecta work.
 

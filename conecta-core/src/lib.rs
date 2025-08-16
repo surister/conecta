@@ -26,8 +26,7 @@ use crate::source::get_source;
 
 use arrow::array::{
     ArrayBuilder, ArrayRef, Date32Builder, Float32Builder, Float64Builder, Int32Builder,
-    StringBuilder,
-    TimestampMicrosecondBuilder,
+    StringBuilder, TimestampMicrosecondBuilder,
 };
 use arrow::datatypes::{Field, Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;

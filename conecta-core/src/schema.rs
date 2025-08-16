@@ -32,14 +32,16 @@ pub enum NativeType {
     Date32,
     Date64,
     TimestampWithoutTimeZone,
-    TimestampWithTimeZone
+    TimestampWithTimeZone,
 }
 
 impl NativeType {
     pub(crate) fn to_arrow(&self) -> DataType {
         match self {
             NativeType::I32 => DataType::Int32,
-            NativeType::TimestampWithoutTimeZone => DataType::Timestamp(arrow::datatypes::TimeUnit::Microsecond, None),
+            NativeType::TimestampWithoutTimeZone => {
+                DataType::Timestamp(arrow::datatypes::TimeUnit::Microsecond, None)
+            }
             NativeType::F64 => DataType::Float64,
             NativeType::String => DataType::Utf8,
             NativeType::Date32 => DataType::Date32,

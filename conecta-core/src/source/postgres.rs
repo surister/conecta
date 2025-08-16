@@ -5,7 +5,7 @@ use arrow::array::*;
 
 use postgres::types::Type;
 use postgres::NoTls;
-use r2d2_postgres::r2d2::{Pool};
+use r2d2_postgres::r2d2::Pool;
 use r2d2_postgres::{r2d2, PostgresConnectionManager};
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;

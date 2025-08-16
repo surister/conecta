@@ -5,11 +5,11 @@ watch: [./docs/]
 
 nav:
   - Project:
-      - Setup: setup.md
-      - Development: development.md
+      - Development: project/development.md
+      - Internals: project/internals.md
   - Using the library:
-      - Read sql: read_sql.md
-      - Optimizing further: op
+      - Loading data: library/read_sql.md
+      - Optimizing further: library/optimizing_further.md
   - Source databases:
       - Postgres: databases/postgres.md
   - Arrow backends: arrow_backends.md

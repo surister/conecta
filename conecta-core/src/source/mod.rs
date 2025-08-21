@@ -1,19 +1,14 @@
-use crate::source::postgres::PostgresSource;
 pub use crate::source::source::Source;
-use crate::source::sqlite::SqliteSource;
 use std::fmt::Debug;
 
 pub mod postgres;
 mod source;
-mod sqlite;
 
 #[derive(Debug, PartialEq)]
 pub enum SourceType {
     Postgres,
-    SQLite,
+    MySQL,
 }
-
-pub type SourceRef = Box<dyn Source>;
 
 /// Parses a connection string and returns the `SourceType` depending on the scheme.
 /// # Example:
@@ -46,7 +41,6 @@ pub fn parse_uri(conn: String) -> SourceType {
     match scheme {
         "postgres" => SourceType::Postgres,
         "postgresql" => SourceType::Postgres,
-        "sqlite" => SourceType::SQLite,
         _ => panic!(
             "Unknown scheme <'{}'>, do we support that database, or is the \
                 scheme written correctly? Tip: Correct: <'postgres://user:password@localhost'>,\
@@ -56,13 +50,13 @@ pub fn parse_uri(conn: String) -> SourceType {
     }
 }
 
-pub fn get_source(conn_string: &str, conn_string_type: Option<&str>) -> Box<dyn Source> {
+pub fn get_source(conn_string: &str, conn_string_type: Option<&str>) -> SourceType {
     let source_type = match conn_string_type {
         Some(conn_string_type) => {
             // The user specified a conn_string_type.
             match conn_string_type {
                 "postgres" => SourceType::Postgres,
-                "sqlite" => SourceType::SQLite,
+                "mysql" => SourceType::MySQL,
                 _ => panic!("The specified conn_string_type is not supported."),
             }
         }
@@ -72,18 +66,19 @@ pub fn get_source(conn_string: &str, conn_string_type: Option<&str>) -> Box<dyn 
             parse_uri(conn_string.parse().unwrap())
         }
     };
+    source_type
 
     // Construct the `Source` struct and validate it.
-    let source: Box<dyn Source> = match source_type {
-        SourceType::Postgres => Box::new(PostgresSource {
-            conn_string: conn_string.to_string(),
-        }),
-        SourceType::SQLite => Box::new(SqliteSource {
-            conn_string: conn_string.to_string(),
-        }),
-    };
-    source.validate();
-    source
+    // let source: Box<dyn Source> = match source_type {
+    //     SourceType::Postgres => Box::new(PostgresSource {
+    //         conn_string: conn_string.to_string(),
+    //     }),
+    //     SourceType::SQLite => Box::new(SqliteSource {
+    //         conn_string: conn_string.to_string(),
+    //     }),
+    // };
+    // source.validate();
+    // source
 }
 
 #[cfg(test)]

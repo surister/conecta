@@ -1,14 +1,15 @@
-use crate::metadata::NeededMetadataFromSource;
+use crate::metadata::PartitionPlan;
 use crate::schema::Schema;
-use postgres::NoTls;
-use r2d2_postgres::r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
+use arrow::array::ArrayRef;
 use std::fmt::Debug;
-use std::format;
 
 pub trait Source: Debug + Send + Sync {
-    /// Getter that returns the connection_string.
-    fn get_conn_string(&self) -> String;
+    /// Processes the given partition_plan to an output `schema`
+    fn process_partition_plan(
+        &self,
+        partition_plan: PartitionPlan,
+        schema: Schema,
+    ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema);
 
     /// Wraps a given SQL query to only give values within the given `bounds`, on the given column.
     ///
@@ -37,12 +38,8 @@ pub trait Source: Debug + Send + Sync {
     // TODO: Check if this work on more complex queries like CTEs
     fn get_table_name(&self, query: &str) -> String;
 
-    fn fetch_min_max(
-        &self,
-        query: &str,
-        column: &str,
-        pool: Pool<PostgresConnectionManager<NoTls>>,
-    ) -> (Option<i64>, Option<i64>);
+    /// Fetches the min and max value of the given `column` of the given `query`
+    fn fetch_min_max(&self, query: &str, column: &str) -> (Option<i64>, Option<i64>);
 
     /// Lets database sources to implement extra validation, most sources
     /// will implement this and do nothing.

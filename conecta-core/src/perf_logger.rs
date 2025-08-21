@@ -1,7 +1,9 @@
 use peak_alloc::PeakAlloc;
+use std::sync::{Mutex, OnceLock};
 
 #[global_allocator]
 pub static PEAK_ALLOC: PeakAlloc = PeakAlloc;
+static PERF_LOGGER: OnceLock<Mutex<PerfLogger>> = OnceLock::new();
 
 use std::time::{Duration, Instant};
 
@@ -62,9 +64,30 @@ impl PerfLogger {
     pub fn log_peak_memory(&self) {
         log::debug!("peak_mem_usage: {}MB", PEAK_ALLOC.peak_usage_as_mb())
     }
+
     pub fn elapsed(&self) -> Duration {
         self.start.unwrap().elapsed()
     }
+}
+
+fn perf() -> &'static Mutex<PerfLogger> {
+    PERF_LOGGER.get_or_init(|| Mutex::new(PerfLogger::new_started()))
+}
+
+pub fn perf_start() {
+    perf().lock().unwrap().start();
+}
+
+pub fn perf_checkpoint(message: &str, with_memory: bool) {
+    perf().lock().unwrap().log_checkpoint(message, with_memory);
+}
+
+pub fn perf_elapsed() {
+    perf().lock().unwrap().log_elapsed();
+}
+
+pub fn perf_peak_memory() {
+    perf().lock().unwrap().log_peak_memory();
 }
 
 pub fn log_memory() {

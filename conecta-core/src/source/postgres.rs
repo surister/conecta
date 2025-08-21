@@ -1,28 +1,155 @@
 use arrow::array::*;
-use r2d2_postgres::postgres;
 
-use arrow::array::*;
+use crate::destination::get_arrow_builders;
+use crate::metadata::{NeededMetadataFromSource, PartitionPlan};
+use crate::schema::{Column, NativeType, Schema};
+use crate::source::postgres::postgres::types::WasNull;
+use crate::source::source::Source;
 
+use chrono::NaiveDate;
+use log::debug;
+
+use postgres::fallible_iterator::FallibleIterator;
 use postgres::types::Type;
 use postgres::NoTls;
+
+use r2d2_postgres::postgres;
 use r2d2_postgres::r2d2::{Pool, PooledConnection};
-use r2d2_postgres::{r2d2, PostgresConnectionManager};
+use r2d2_postgres::PostgresConnectionManager;
+
+use rayon::current_thread_index;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
+
+use crate::perf_logger::{perf_checkpoint, perf_elapsed, perf_peak_memory};
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 
-use crate::metadata::NeededMetadataFromSource;
-use crate::schema::{Column, NativeType, Schema};
-use crate::source::source::Source;
-
 #[derive(Debug)]
 pub struct PostgresSource {
-    pub conn_string: String,
+    pub pool: Pool<PostgresConnectionManager<NoTls>>,
+}
+
+impl PostgresSource {
+    fn get_conn(&self) -> PooledConnection<PostgresConnectionManager<NoTls>> {
+        self.pool
+            .get()
+            .expect("Could not generate a connection to the source database")
+    }
+}
+
+macro_rules! append_column_value {
+    (
+        $unwrap:ident, $col_id:ident, $builder:ident, $native_type:ident,
+        {
+            $($type:pat => $builder_ty:ty, $value_ty:ty, $transform:expr),+ $(,)?
+        }
+    ) => {
+        match $native_type {
+            $(
+                $type => {
+                    let downcasted_builder = $builder
+                        .as_any_mut()
+                        .downcast_mut::<$builder_ty>()
+                        .unwrap();
+                    let unwrapped_value = $unwrap.try_get::<usize, $value_ty>($col_id);
+                    match unwrapped_value {
+                        Ok(v) => downcasted_builder.append_value(($transform)(v)),
+                        Err(e) => {
+                            // If the error was WasNull, we append a null.
+                            if let Some(inner) = e.into_source() {
+                                if inner.downcast_ref::<WasNull>().is_some() {
+                                        downcasted_builder.append_null()
+                                } else {
+                                    panic!("Error trying to deserialize a type, {:?}", inner)
+                                }
+                            }
+                        },
+                    }
+                }
+            )+
+            _ => panic!("Unsupported type: {:?}", $native_type),
+        }
+    };
 }
 
 impl Source for PostgresSource {
-    fn get_conn_string(&self) -> String {
-        self.conn_string.clone()
+    fn process_partition_plan(
+        &self,
+        partition_plan: PartitionPlan,
+        schema: crate::schema::Schema,
+    ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
+        let arrays: Vec<Vec<ArrayRef>> = partition_plan
+            .data_queries
+            .into_par_iter()
+            .map(|query| {
+                let mut conn = self.get_conn();
+
+                let count: i64;
+                match partition_plan.partition_config.needed_metadata_from_source {
+                    NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count
+                        if !partition_plan.partition_config.disable_preallocation =>
+                    {
+                        let count_query =
+                            conn.query(format!("SELECT count(*) FROM ({:})", query).as_str(), &[]);
+                        count = count_query.unwrap().get(0).unwrap().get(0);
+                    }
+                    _ => {
+                        count = 0;
+                    }
+                }
+                let rows = conn
+                    .query_raw::<_, bool, _>(query.as_str(), vec![])
+                    .expect("Query failed");
+
+                let mut builders: Vec<Box<dyn ArrayBuilder>> =
+                    get_arrow_builders(&schema, count as usize);
+
+                debug!(
+                    "thread-{}: allocated {:?}x{:?}",
+                    current_thread_index().unwrap_or(0),
+                    builders.len(),
+                    count
+                );
+
+                let column_types: Vec<NativeType> = schema
+                    .columns
+                    .iter()
+                    .map(|col| col.data_type.clone())
+                    .collect();
+
+                for row in rows.iterator() {
+                    let unwrap = row.unwrap();
+                    for (col_id, builder) in builders.iter_mut().enumerate() {
+                        let ty = column_types.get(col_id).unwrap();
+                        append_column_value!(unwrap, col_id, builder, ty, {
+                            NativeType::I32 => Int32Builder, i32, | v| v,
+                            NativeType::F32 => Float32Builder, f32, | v | v,
+                            NativeType::F64 => Float64Builder, f64, | v | v,
+                            NativeType::Date32 => Date32Builder, NaiveDate, |v: NaiveDate|{
+                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
+                                (v - epoch).num_days() as i32
+                            },
+                            NativeType::String => StringBuilder, String, | v | v
+                        });
+                    }
+                }
+
+                let arrays: Vec<ArrayRef> = builders
+                    .into_iter()
+                    .map(|mut builder| builder.finish())
+                    .collect::<Vec<ArrayRef>>();
+                return arrays;
+            })
+            .collect::<Vec<_>>();
+
+        perf_checkpoint("Finished loading data", true);
+
+        perf_elapsed();
+        perf_peak_memory();
+
+        (arrays, schema)
     }
 
     // SQL creation methods.
@@ -94,21 +221,8 @@ impl Source for PostgresSource {
         panic!("Could not extract table_name")
     }
 
-    fn get_min_max_query(&self, query: &str, col: &str) -> String {
-        format!(
-            "SELECT MIN({col})::bigint, \
-                    MAX({col})::bigint \
-             FROM ({query})",
-        )
-    }
-
-    fn fetch_min_max(
-        &self,
-        query: &str,
-        column: &str,
-        mut pool: Pool<PostgresConnectionManager<NoTls>>,
-    ) -> (Option<i64>, Option<i64>) {
-        let mut pool = pool.get().unwrap();
+    fn fetch_min_max(&self, query: &str, column: &str) -> (Option<i64>, Option<i64>) {
+        let mut pool = self.pool.get().unwrap();
         let min_max_query = self.get_min_max_query(query, column);
         let result = pool
             .query_one(&min_max_query, &[])
@@ -120,12 +234,9 @@ impl Source for PostgresSource {
 
     fn get_schema_of(&self, query: &str) -> Schema {
         let query = self.get_schema_query(query);
-        let conn = self.get_conn_string().parse().unwrap();
-        let manager = PostgresConnectionManager::new(conn, NoTls);
-        let pool = r2d2::Pool::builder().max_size(5).build(manager).unwrap();
+        let mut conn = self.get_conn();
 
-        let mut client = pool.get().expect("Could not connect to the database");
-        let result = client.prepare(&query);
+        let result = conn.prepare(&query);
         let columns: Vec<Column> = result
             .unwrap()
             .columns()
@@ -138,8 +249,17 @@ impl Source for PostgresSource {
             .collect();
         Schema { columns }
     }
+
+    fn get_min_max_query(&self, query: &str, col: &str) -> String {
+        format!(
+            "SELECT MIN({col})::bigint, \
+                    MAX({col})::bigint \
+             FROM ({query})",
+        )
+    }
 }
 
+///
 fn to_native_ty(ty: Type) -> NativeType {
     match ty {
         Type::INT4 => NativeType::I32,

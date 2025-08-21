@@ -1,8 +1,5 @@
 use crate::partition::{created_bounded_queries, PartitionConfig};
 use crate::source::Source;
-use postgres::NoTls;
-use r2d2_postgres::r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -18,7 +15,7 @@ pub enum QueryPartitioningMode {
     /// A single unpartitioned query provided by the user.
     OneUnpartitionedQuery,
 
-    /// A single query that should be partitioned by the system.
+    /// A single query that should be partitioned by conecta.metadata.create_partition_plan.
     /// Both `partition_num` and `partition_column` must be also given by the user.
     OnePartitionedQuery,
 
@@ -30,7 +27,6 @@ pub enum QueryPartitioningMode {
 pub fn create_partition_plan(
     source: &Box<dyn Source>,
     partition_config: PartitionConfig,
-    pool: Pool<PostgresConnectionManager<NoTls>>,
 ) -> PartitionPlan {
     let data_queries: Vec<String>;
 
@@ -40,7 +36,7 @@ pub fn create_partition_plan(
         None => (None, None),
     };
 
-    // TODO: I'm not sure we need this anymore.
+    // TODO: I'm not sure we need this anymore (merge_queries).
     let query = match partition_config.queries.len() {
         1 => &partition_config.queries.get(0).unwrap(),
 
@@ -51,11 +47,8 @@ pub fn create_partition_plan(
 
     match partition_config.needed_metadata_from_source {
         NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::MinMax => {
-            (min_value, max_value) = source.fetch_min_max(
-                query,
-                partition_config.partition_on.as_deref().unwrap(),
-                pool,
-            );
+            (min_value, max_value) =
+                source.fetch_min_max(query, partition_config.partition_on.as_deref().unwrap());
         }
         _ => {}
     }
@@ -111,42 +104,17 @@ pub struct PartitionPlan {
 mod tests {
     use super::*;
     use crate::schema::Schema;
+    use arrow::array::ArrayRef;
 
     #[derive(Debug)]
     struct DummySource;
 
     impl Source for DummySource {
-        fn get_conn_string(&self) -> String {
-            "someconn".to_string()
-        }
-        fn get_metadata_query(
-            &self,
-            query: &str,
-            column: Option<&str>,
-            needed_metadata_from_source: &NeededMetadataFromSource,
-            partition_range: Option<(i64, i64)>,
-        ) -> String {
-            "some_metadata_query".to_string()
-        }
         fn get_table_name(&self, query: &str) -> String {
             "some_table_name".to_string()
         }
         fn get_schema_query(&self, original_query: &str) -> String {
             "some_schema_query".to_string()
-        }
-        fn fetch_metadata(
-            &self,
-            query: &str,
-            column: Option<&str>,
-            needed_metadata: &NeededMetadataFromSource,
-            partition_range: Option<(i64, i64)>,
-        ) -> (Option<i64>, Option<i64>, i64, String) {
-            (
-                Some(1i64),
-                Some(10i64),
-                10,
-                "some_metadata_query".to_string(),
-            )
         }
         fn wrap_query_with_bounds(
             &self,
@@ -171,15 +139,6 @@ mod tests {
             todo!()
         }
 
-        fn fetch_min_max(
-            &self,
-            query: &str,
-            column: &str,
-            pool: PooledConnection<PostgresConnectionManager<NoTls>>,
-        ) -> (Option<i64>, Option<i64>) {
-            todo!()
-        }
-
         fn fetch_counts(
             &self,
             queries: &Vec<String>,
@@ -190,7 +149,19 @@ mod tests {
         }
 
         fn get_min_max_query(&self, query: &str, col: &str) -> String {
+            "min_max_query".to_string()
+        }
+
+        fn process_partition_plan(
+            &self,
+            partition_plan: PartitionPlan,
+            schema: Schema,
+        ) -> (Vec<Vec<ArrayRef>>, Schema) {
             todo!()
+        }
+
+        fn fetch_min_max(&self, query: &str, column: &str) -> (Option<i64>, Option<i64>) {
+            (Some(0), Some(1))
         }
     }
 

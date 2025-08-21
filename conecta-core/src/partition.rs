@@ -2,12 +2,17 @@ use crate::metadata::{NeededMetadataFromSource, QueryPartitioningMode};
 use crate::source::Source;
 use serde::Serialize;
 
+/// Represents the configuration that will be used for the data load.
 #[derive(Debug, Serialize)]
 pub struct PartitionConfig {
+    // Given by the user.
     pub queries: Vec<String>,
     pub partition_on: Option<String>,
     pub partition_num: Option<u16>,
     pub partition_range: Option<(i64, i64)>,
+    pub disable_preallocation: bool,
+
+    // Computed by us from the user parameters.
     pub needed_metadata_from_source: NeededMetadataFromSource,
     pub query_partition_mode: QueryPartitioningMode,
 }
@@ -18,6 +23,7 @@ impl PartitionConfig {
         partition_on: Option<String>,
         partition_num: Option<u16>,
         partition_range: Option<(i64, i64)>,
+        disable_preallocation: bool,
     ) -> Self {
         if queries.is_empty() {
             panic!("must pass some queries!")
@@ -83,6 +89,7 @@ impl PartitionConfig {
             partition_on,
             needed_metadata_from_source,
             query_partition_mode: partition_mode,
+            disable_preallocation,
         }
     }
 }
@@ -174,12 +181,17 @@ mod config_partition_tests {
 
     #[test]
     fn test_valid_single_query_no_partition() {
-        let config =
-            PartitionConfig::new(vec!["SELECT * FROM lineitem".to_string()], None, None, None);
+        let config = PartitionConfig::new(
+            vec!["SELECT * FROM lineitem".to_string()],
+            None,
+            None,
+            None,
+            false,
+        );
         assert_eq!(config.queries.len(), 1);
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource::None
+            NeededMetadataFromSource:
         );
         assert_eq!(
             config.query_partition_mode,

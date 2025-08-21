@@ -1,3 +1,30 @@
+Source for [PostgresSQL](https://www.postgresql.org/) database.
+
+## URI
+The supported URI format is:
+
+`scheme://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]`
+
+For example:
+
+```shell
+postgresql://user:password@localhost:5432/postgres_database
+```
+
+Several schemes are supported, and others like sqlalchemy's are supported for compatability.
+
+Valid schemes:
+
+```shell
+postgresql://
+postgres://
+postgres+psycopg2://
+postgresql+psycopg://
+```
+
+In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
+
+
 ## Types supported
 
 | Postgres             | Supported        | Native type              | Arrow                           | Notes |
@@ -9,7 +36,6 @@
 | `CHAR`               | :material-check: | `String`                 | `DataType::Utf8`                |       |
 | `BPCHAR`             | :material-check: | `String`                 | `DataType::Utf8`                |       |
 | `DATE`               | :material-check: | `chrono::NaiveDate`      | `DataType::Date32`              |       |
-| `Array[INT]`         | :material-close: | `Vec<i32>`               | `DataType::List`                |       |
 | `TEXT`               | :material-close: | `String`                 | `DataType::Utf8`                |       |
 | `VARCHAR`            | :material-close: | `String`                 | `DataType::Utf8`                |       |
 | `UUID`               | :material-close: | `uuid::Uuid`             | `DataType::FixedSizeBinary(16)` |       |
@@ -30,3 +56,16 @@
 | `Array[TIMESTAMPTZ]` | :material-close: | `Vec<DateTime<Utc>`      | `DataType::List`                |       |
 | `Array[NUMERIC]`     | :material-close: | `Vec<BigDecimal>`        | `DataType::List`                |       |
 | `Array[BYTEA]`       | :material-close: | `Vec<Vec<u8>>`           | `DataType::List`                |       |
+
+## Example
+
+```python
+from conecta import read_sql
+
+t = read_sql(
+    conn="postgres://postgres:postgres@localhost:5432",
+    queries=['select * from lineitem'],
+    partition_on='l_orderkey',
+    partition_num=4,
+)
+```

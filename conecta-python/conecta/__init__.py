@@ -10,7 +10,7 @@ from .conecta import create_partition_plan as _create_partition_plan
 from .conecta import read_sql as _read_sql
 
 
-def set_debug_log(mode=Literal['performance', 'lib', 'all']) -> None:
+def set_debug_log(mode: Literal['perf', 'lib', 'all'] = 'lib') -> None:
     """
      Sets the debugging log configuration of conecta. It configures the `RUST_LOG` environment
      variable accordingly.
@@ -20,7 +20,7 @@ def set_debug_log(mode=Literal['performance', 'lib', 'all']) -> None:
 
     Modes:
 
-    * performance: Logs only show the conecta::perf_logger logger, helpful to debug
+    * perf: Logs only show the conecta::perf_logger logger, helpful to debug
      ram usage and timings of data load.
     * lib: Logs everything that happens in conecta_core and conecta_python,
      includes `conecta_performance`, helpful to debug the library, includes `partition plan`.
@@ -32,7 +32,7 @@ def set_debug_log(mode=Literal['performance', 'lib', 'all']) -> None:
     import os
 
     match mode:
-        case "performance":
+        case "perf":
             rust_log = 'conecta_core::perf_logger=debug'
         case "lib":
             rust_log = 'conecta=debug,conecta_core=debug'
@@ -123,7 +123,7 @@ class PartitionConfig:
          are two options: [Count,CountAndMinMax]
         query_partition_mode: The mode that was inferred from the user parameters, there are
          three options: [OneUnpartitionedQuery, OnePartitionedQuery, PartitionedQueries] See more at
-         [todo add link of rust ENUM]
+         https://github.com/surister/conecta/blob/70af291199b1a794e00455816f01d925f5a8c040/conecta-core/src/metadata.rs#L17
         ...
     """
     queries: list[str]

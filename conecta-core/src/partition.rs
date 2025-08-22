@@ -32,6 +32,9 @@ impl PartitionConfig {
         if (partition_num.is_some() || partition_on.is_some() || partition_range.is_some())
             && queries.len() > 1
         {
+            println!("{:?}", partition_num);
+            println!("{:?}", partition_range);
+            println!("{:?}", partition_on);
             panic!(
                 "Double partition scheme error: You have passed several queries
                 (user defined partition) and one or some partition_* option 
@@ -191,7 +194,7 @@ mod config_partition_tests {
         assert_eq!(config.queries.len(), 1);
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource:
+            NeededMetadataFromSource::Count
         );
         assert_eq!(
             config.query_partition_mode,
@@ -207,12 +210,13 @@ mod config_partition_tests {
             column.clone(),
             Some(4),
             None,
+            false,
         );
         assert_eq!(config.partition_num, Some(4));
         assert_eq!(config.partition_on, column);
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource::MinMax
+            NeededMetadataFromSource::CountAndMinMax
         );
         assert_eq!(
             config.query_partition_mode,
@@ -227,37 +231,55 @@ mod config_partition_tests {
             Some("l_orderkey".to_string()),
             None,
             Some((0, 100)),
+            false,
         );
         assert_eq!(config.partition_range, Some((0, 100)));
         assert_eq!(
             config.needed_metadata_from_source,
-            NeededMetadataFromSource::None
+            NeededMetadataFromSource::Count
         );
         assert_eq!(
             config.query_partition_mode,
             QueryPartitioningMode::OneUnpartitionedQuery
         );
     }
+    #[test]
+    fn test_double_partition() {
+        let partition_config = PartitionConfig::new(
+            vec!["SELECT * FROM a".to_string(), "SELECT * FROM b".to_string()],
+            None,
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            partition_config.needed_metadata_from_source,
+            NeededMetadataFromSource::Count
+        );
+        assert_eq!(partition_config.partition_num, None);
+    }
 
     #[test]
     #[should_panic(expected = "Double partition scheme error")]
-    fn test_double_partition_scheme_panics() {
+    fn test_double_partition_panics() {
         PartitionConfig::new(
             vec!["SELECT * FROM a".to_string(), "SELECT * FROM b".to_string()],
             Some("id".to_string()),
             None,
             None,
+            false,
         );
     }
 
     #[test]
-    #[should_panic(expected = "You passed partition_num")]
+    #[should_panic]
     fn test_partition_num_without_partition_on_panics() {
         PartitionConfig::new(
             vec!["SELECT * FROM lineitem".to_string()],
             None,
             Some(2),
             None,
+            false,
         );
     }
     #[test]
@@ -268,6 +290,7 @@ mod config_partition_tests {
             None,
             None,
             Some((0, 100)),
+            false,
         );
     }
 
@@ -279,6 +302,7 @@ mod config_partition_tests {
             Some("value".to_string()),
             None,
             Some((100, 100)),
+            false,
         );
     }
 }

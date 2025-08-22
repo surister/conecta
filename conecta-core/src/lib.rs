@@ -13,7 +13,7 @@ pub mod source;
 
 use crate::metadata::create_partition_plan;
 use crate::partition::PartitionConfig;
-use crate::perf_logger::{perf_checkpoint, perf_start, PerfLogger};
+use crate::perf_logger::{perf_checkpoint, perf_start};
 use crate::source::{get_source, Source, SourceType};
 
 use arrow::array::ArrayRef;

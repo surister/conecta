@@ -91,8 +91,10 @@ impl Source for PostgresSource {
                     NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count
                         if !partition_plan.partition_config.disable_preallocation =>
                     {
-                        let count_query =
-                            conn.query(format!("SELECT count(*) FROM ({:})", query).as_str(), &[]);
+                        let count_query = conn.query(
+                            format!("SELECT count(*) FROM ({:}) as q_count", query).as_str(),
+                            &[],
+                        );
                         count = count_query.unwrap().get(0).unwrap().get(0);
                     }
                     _ => {
@@ -169,7 +171,7 @@ impl Source for PostgresSource {
         };
 
         format!(
-            "select * from ({query}) where {column} >= {start:?} and {column} {last_char} {stop:?}",
+            "select * from ({query}) as query_inner where {column} >= {start:?} and {column} {last_char} {stop:?}",
             query = query,
             column = column,
             start = bounds.0,
@@ -194,7 +196,7 @@ impl Source for PostgresSource {
     }
 
     fn get_schema_query(&self, query: &str) -> String {
-        format!("select * from ({}) limit 0", query)
+        format!("select * from ({}) as query_inner limit 0", query)
     }
 
     fn get_table_name(&self, query: &str) -> String {
@@ -254,7 +256,7 @@ impl Source for PostgresSource {
         format!(
             "SELECT MIN({col})::bigint, \
                     MAX({col})::bigint \
-             FROM ({query})",
+             FROM ({query}) as query_inner",
         )
     }
 }

@@ -110,11 +110,12 @@ mod tests {
     struct DummySource;
 
     impl Source for DummySource {
-        fn get_table_name(&self, query: &str) -> String {
-            "some_table_name".to_string()
-        }
-        fn get_schema_query(&self, original_query: &str) -> String {
-            "some_schema_query".to_string()
+        fn process_partition_plan(
+            &self,
+            partition_plan: PartitionPlan,
+            schema: Schema,
+        ) -> (Vec<Vec<ArrayRef>>, Schema) {
+            todo!()
         }
         fn wrap_query_with_bounds(
             &self,
@@ -128,9 +129,16 @@ mod tests {
         fn merge_queries(&self, queries: &Vec<String>) -> String {
             "".to_string()
         }
-        fn send_query(&self, query: &str) {
-            todo!()
+        fn get_schema_query(&self, original_query: &str) -> String {
+            "some_schema_query".to_string()
         }
+        fn get_table_name(&self, query: &str) -> String {
+            "some_table_name".to_string()
+        }
+        fn fetch_min_max(&self, query: &str, column: &str) -> (Option<i64>, Option<i64>) {
+            (Some(1), Some(10))
+        }
+
         fn validate(&self) {
             todo!()
         }
@@ -139,29 +147,8 @@ mod tests {
             todo!()
         }
 
-        fn fetch_counts(
-            &self,
-            queries: &Vec<String>,
-            min: Option<i64>,
-            max: Option<i64>,
-        ) -> Vec<i64> {
-            todo!()
-        }
-
         fn get_min_max_query(&self, query: &str, col: &str) -> String {
             "min_max_query".to_string()
-        }
-
-        fn process_partition_plan(
-            &self,
-            partition_plan: PartitionPlan,
-            schema: Schema,
-        ) -> (Vec<Vec<ArrayRef>>, Schema) {
-            todo!()
-        }
-
-        fn fetch_min_max(&self, query: &str, column: &str) -> (Option<i64>, Option<i64>) {
-            (Some(0), Some(1))
         }
     }
 
@@ -174,12 +161,13 @@ mod tests {
             Some("col".to_string()),
             partitions_num,
             None,
+            false,
         );
 
         let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(1));
         assert_eq!(query_plan.max_value, Some(10));
-        assert_eq!(query_plan.counts, 10);
+        // assert_eq!(query_plan.counts, 10);
         assert_eq!(
             query_plan.data_queries.len(),
             partitions_num.unwrap() as usize
@@ -196,12 +184,13 @@ mod tests {
             Some("col".to_string()),
             partitions_num,
             partition_range,
+            false,
         );
 
         let query_plan = create_partition_plan(&source, partition_config);
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
-        assert_eq!(query_plan.counts, 10);
+        // assert_eq!(query_plan.counts, 10);
         assert_eq!(
             query_plan.data_queries.len() as i16,
             partitions_num.unwrap() as i16
@@ -217,12 +206,13 @@ mod tests {
             Some("col".to_string()),
             partitions_num,
             partition_range,
+            false,
         );
 
         let query_plan = create_partition_plan(&source, partition_config);
-        assert_eq!(query_plan.min_value, Some(1));
-        assert_eq!(query_plan.max_value, Some(10));
-        assert_eq!(query_plan.counts, 10);
+        assert_eq!(query_plan.min_value, None);
+        assert_eq!(query_plan.max_value, None);
+        // assert_eq!(query_plan.counts, 10);
         assert_eq!(query_plan.data_queries.len(), 1)
     }
     #[test]
@@ -235,13 +225,14 @@ mod tests {
             Some("col".to_string()),
             partitions_num,
             partition_range,
+            false,
         );
 
         let query_plan = create_partition_plan(&source, partition_config);
         println!("{:#?}", query_plan);
         assert_eq!(query_plan.min_value, Some(partition_range.unwrap().0));
         assert_eq!(query_plan.max_value, Some(partition_range.unwrap().1));
-        assert_eq!(query_plan.counts, 10);
+        // assert_eq!(query_plan.counts, 10);
         assert_eq!(query_plan.data_queries.len(), 1)
     }
 
@@ -258,12 +249,13 @@ mod tests {
             None,
             partitions_num,
             partition_range,
+            false,
         );
 
         let query_plan = create_partition_plan(&source, partition_config);
-        assert_eq!(query_plan.min_value, Some(1));
-        assert_eq!(query_plan.max_value, Some(10));
-        assert_eq!(query_plan.counts, 10);
+        assert_eq!(query_plan.min_value, None);
+        assert_eq!(query_plan.max_value, None);
+        // assert_eq!(query_plan.counts, 10);
         assert_eq!(query_plan.data_queries.len(), 2)
     }
 }

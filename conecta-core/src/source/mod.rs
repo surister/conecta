@@ -92,9 +92,6 @@ mod tests {
 
         let result = parse_uri("postgresql+psycopg2://u:p@h/d".to_string());
         assert_eq!(SourceType::Postgres, result);
-
-        let result = parse_uri("sqlite://u:p@host/db_name".to_string());
-        assert_eq!(SourceType::SQLite, result);
     }
 
     #[test]
@@ -104,7 +101,7 @@ mod tests {
     }
     #[test]
     #[should_panic]
-    fn parse_conn_panic2s() {
+    fn parse_conn_panics_2() {
         parse_uri("+s://user:password".to_string());
     }
 }

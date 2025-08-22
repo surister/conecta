@@ -47,6 +47,5 @@ pub trait Source: Debug + Send + Sync {
 
     fn get_schema_of(&self, query: &str) -> Schema;
 
-    fn send_query(&self, query: &str) {}
     fn get_min_max_query(&self, query: &str, col: &str) -> String;
 }

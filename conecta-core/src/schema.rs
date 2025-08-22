@@ -1,4 +1,5 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NativeType {
@@ -31,18 +32,54 @@ pub enum NativeType {
     // Time
     Date32,
     Date64,
+    TimestampWithoutTimeZone,
+    Time,
+
+    // Vectors
+    VecBool,
+    VecChar,
+
+    VecI8,
+    VecI16,
+    VecI32,
+    VecI64,
+
+    VecF16,
+    VecF32,
+    VecF64,
+
+    VecString,
 }
 
 impl NativeType {
+    /// Returns the `arrow` datatype equivalent.
     pub(crate) fn to_arrow(&self) -> DataType {
         match self {
+            // Integers
+            NativeType::I16 => DataType::Int16,
             NativeType::I32 => DataType::Int32,
+            NativeType::I64 => DataType::Int64,
+
+            // Floats
             NativeType::F64 => DataType::Float64,
+
+            //Logical
+            NativeType::Bool => DataType::Boolean,
+
+            // Text
             NativeType::String => DataType::Utf8,
+
+            // Time
             NativeType::Date32 => DataType::Date32,
+            NativeType::TimestampWithoutTimeZone => {
+                DataType::Timestamp(arrow::datatypes::TimeUnit::Microsecond, None)
+            }
+            NativeType::Time => DataType::Time64(arrow::datatypes::TimeUnit::Microsecond),
+
+            NativeType::VecI32 => DataType::List(Arc::new(Field::new("_", DataType::Int32, true))),
             _ => {
                 panic!(
-                    "Native type to arrow not implemented. NativeType {:?}",
+                    "Native type to arrow is not implemented. NativeType {:?}",
                     self
                 )
             }

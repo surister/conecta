@@ -1,12 +1,11 @@
-use arrow::array::*;
-
 use crate::destination::get_arrow_builders;
 use crate::metadata::{NeededMetadataFromSource, PartitionPlan};
 use crate::schema::{Column, NativeType, Schema};
 use crate::source::postgres::postgres::types::WasNull;
 use crate::source::source::Source;
+use arrow::array::*;
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use log::debug;
 
 use postgres::fallible_iterator::FallibleIterator;
@@ -52,7 +51,7 @@ macro_rules! append_column_value {
                     let downcasted_builder = $builder
                         .as_any_mut()
                         .downcast_mut::<$builder_ty>()
-                        .unwrap();
+                        .expect(format!("Could not downcast builder for type: {:?}", $native_type).as_str());
                     let unwrapped_value = $unwrap.try_get::<usize, $value_ty>($col_id);
                     match unwrapped_value {
                         Ok(v) => downcasted_builder.append_value(($transform)(v)),
@@ -122,18 +121,30 @@ impl Source for PostgresSource {
                     .collect();
 
                 for row in rows.iterator() {
-                    let unwrap = row.unwrap();
+                    let unwrap = row.expect("Row is None");
                     for (col_id, builder) in builders.iter_mut().enumerate() {
-                        let ty = column_types.get(col_id).unwrap();
+                        let ty = column_types.get(col_id).expect("No column");
                         append_column_value!(unwrap, col_id, builder, ty, {
+                            NativeType::I16 => Int16Builder, i16, |v | v,
                             NativeType::I32 => Int32Builder, i32, | v| v,
+                            NativeType::I64 => Int64Builder, i64, | v| v,
                             NativeType::F32 => Float32Builder, f32, | v | v,
                             NativeType::F64 => Float64Builder, f64, | v | v,
+                            NativeType::Bool => BooleanBuilder, bool, |v| v,
+                            NativeType::Time => Time64MicrosecondBuilder, NaiveTime, |v: NaiveTime| {
+                                // truncates to microseconds,
+                                (v.num_seconds_from_midnight() as i64) * 1_000_000 +
+                                (v.nanosecond() as i64) / 1_000
+                            },
                             NativeType::Date32 => Date32Builder, NaiveDate, |v: NaiveDate|{
-                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
+                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).expect("Could not get epoch");
                                 (v - epoch).num_days() as i32
                             },
-                            NativeType::String => StringBuilder, String, | v | v
+                            NativeType::TimestampWithoutTimeZone => TimestampMicrosecondBuilder, NaiveDateTime, | v: NaiveDateTime | {
+                            v.and_utc().timestamp_micros()
+                        },
+                            NativeType::String => StringBuilder, String, | v | v,
+                            NativeType::VecI32 => ListBuilder<Int32Builder>, Vec<Option<i32>>, | v | v,
                         });
                     }
                 }
@@ -224,7 +235,7 @@ impl Source for PostgresSource {
     }
 
     fn fetch_min_max(&self, query: &str, column: &str) -> (Option<i64>, Option<i64>) {
-        let mut pool = self.pool.get().unwrap();
+        let mut pool = self.pool.get().expect("Could not get connection");
         let min_max_query = self.get_min_max_query(query, column);
         let result = pool
             .query_one(&min_max_query, &[])
@@ -261,16 +272,27 @@ impl Source for PostgresSource {
     }
 }
 
-///
+/// Maps a Postgres type with a `NativeType`
 fn to_native_ty(ty: Type) -> NativeType {
     match ty {
+        Type::INT2 => NativeType::I16,
         Type::INT4 => NativeType::I32,
         Type::INT8 => NativeType::I64,
+
         Type::FLOAT4 => NativeType::F32,
         Type::FLOAT8 => NativeType::F64,
-        Type::CHAR | Type::TEXT => NativeType::String,
-        Type::BPCHAR => NativeType::String,
+
+        Type::CHAR | Type::BPCHAR | Type::TEXT => NativeType::String,
+        Type::VARCHAR => NativeType::String,
+        Type::BOOL => NativeType::Bool,
+
+        // Time
         Type::DATE => NativeType::Date32,
+        Type::TIMESTAMP => NativeType::TimestampWithoutTimeZone,
+        Type::TIME => NativeType::Time,
+
+        // Arrays
+        Type::INT4_ARRAY => NativeType::VecI32,
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

@@ -18,4 +18,4 @@ chrono = "0.4.41"
 serde = { version = "1.0.219", features = ["derive"] }
 
 [dev-dependencies]
-flamegraph = "0.6.8"
+flamegraph = "0.6.9"

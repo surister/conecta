@@ -285,6 +285,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::CHAR | Type::BPCHAR | Type::TEXT => NativeType::String,
         Type::VARCHAR => NativeType::String,
         Type::BOOL => NativeType::Bool,
+        Type::UUID => NativeType::UUID,
 
         // Time
         Type::DATE => NativeType::Date32,

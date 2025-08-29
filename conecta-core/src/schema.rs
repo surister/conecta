@@ -28,6 +28,7 @@ pub enum NativeType {
 
     // String types
     String,
+    UUID,
 
     // Time
     Date32,
@@ -49,6 +50,9 @@ pub enum NativeType {
     VecF64,
 
     VecString,
+
+    // Geo
+    BidimensionalPoint,
 }
 
 impl NativeType {
@@ -61,6 +65,8 @@ impl NativeType {
             NativeType::I64 => DataType::Int64,
 
             // Floats
+            NativeType::F16 => DataType::Float16,
+            NativeType::F32 => DataType::Float32,
             NativeType::F64 => DataType::Float64,
 
             //Logical
@@ -76,7 +82,19 @@ impl NativeType {
             }
             NativeType::Time => DataType::Time64(arrow::datatypes::TimeUnit::Microsecond),
 
+            // Vectors
+            NativeType::VecI16 => DataType::List(Arc::new(Field::new("_", DataType::Int16, true))),
             NativeType::VecI32 => DataType::List(Arc::new(Field::new("_", DataType::Int32, true))),
+            NativeType::VecI64 => DataType::List(Arc::new(Field::new("_", DataType::Int64, true))),
+            NativeType::VecF32 => {
+                DataType::List(Arc::new(Field::new("_", DataType::Float32, true)))
+            }
+            NativeType::VecF64 => {
+                DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
+            }
+            NativeType::BidimensionalPoint => {
+                DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
+            }
             _ => {
                 panic!(
                     "Native type to arrow is not implemented. NativeType {:?}",

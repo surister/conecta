@@ -4,16 +4,17 @@ on:
   # allows to be called from other workflow
   workflow_call:
 
-  # manual deployment, sometimes we will want to update docs without releasing a new version
   workflow_dispatch:
   push:
     paths:
       - 'conecta-python/**.rs'
+      - 'conecta-python/Cargo.toml'
     branches:
       - master
   pull_request:
     paths:
       - 'conecta-python/**.rs'
+      - 'conecta-python/Cargo.toml'
     branches:
       - master
 

@@ -48,7 +48,7 @@ pub fn make_record_batch(arrays: Vec<ArrayRef>, col_names: Vec<String>) -> Recor
 
     let schema = Arc::new(Schema::new(fields));
     RecordBatch::try_new(SchemaRef::from(schema.clone()), arrays)
-        .expect("Failed to create RecordBatch sexy")
+        .expect("Failed to create RecordBatch")
 }
 
 pub fn read_sql(

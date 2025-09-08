@@ -4,13 +4,12 @@ use crate::schema::{Column, NativeType, Schema};
 use crate::source::postgres::postgres::types::WasNull;
 use crate::source::source::Source;
 use arrow::array::*;
-
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use log::debug;
 
 use postgres::fallible_iterator::FallibleIterator;
 use postgres::types::Type;
-use postgres::NoTls;
+use postgres::{Error, NoTls, RowIter};
 
 use r2d2_postgres::postgres;
 use r2d2_postgres::r2d2::{Pool, PooledConnection};
@@ -24,6 +23,7 @@ use crate::perf_logger::{perf_checkpoint, perf_elapsed, perf_peak_memory};
 use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct PostgresSource {
@@ -54,7 +54,7 @@ macro_rules! append_column_value {
                         .expect(format!("Could not downcast builder for type: {:?}", $native_type).as_str());
                     let unwrapped_value = $unwrap.try_get::<usize, $value_ty>($col_id);
                     match unwrapped_value {
-                        Ok(v) => downcasted_builder.append_value(($transform)(v)),
+                        Ok(v) => { let _ = downcasted_builder.append_value(($transform)(v));},
                         Err(e) => {
                             // If the error was WasNull, we append a null.
                             if let Some(inner) = e.into_source() {
@@ -68,7 +68,7 @@ macro_rules! append_column_value {
                     }
                 }
             )+
-            _ => panic!("Unsupported type: {:?}", $native_type),
+            _ => (),
         }
     };
 }
@@ -84,8 +84,8 @@ impl Source for PostgresSource {
             .into_par_iter()
             .map(|query| {
                 let mut conn = self.get_conn();
-
                 let count: i64;
+
                 match partition_plan.partition_config.needed_metadata_from_source {
                     NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count
                         if !partition_plan.partition_config.disable_preallocation =>
@@ -100,10 +100,13 @@ impl Source for PostgresSource {
                         count = 0;
                     }
                 }
-                let rows = conn
+
+                // Start data loading, using cursors (streaming until exhausted)
+                let rows: RowIter = conn
                     .query_raw::<_, bool, _>(query.as_str(), vec![])
                     .expect("Query failed");
 
+                // Create the array builders where values will be appended.
                 let mut builders: Vec<Box<dyn ArrayBuilder>> =
                     get_arrow_builders(&schema, count as usize);
 
@@ -130,22 +133,56 @@ impl Source for PostgresSource {
                             NativeType::I64 => Int64Builder, i64, | v| v,
                             NativeType::F32 => Float32Builder, f32, | v | v,
                             NativeType::F64 => Float64Builder, f64, | v | v,
-                            NativeType::Bool => BooleanBuilder, bool, |v| v,
+                            NativeType::Bool => BooleanBuilder, bool, | v| v,
                             NativeType::Time => Time64MicrosecondBuilder, NaiveTime, |v: NaiveTime| {
                                 // truncates to microseconds,
                                 (v.num_seconds_from_midnight() as i64) * 1_000_000 +
                                 (v.nanosecond() as i64) / 1_000
                             },
                             NativeType::Date32 => Date32Builder, NaiveDate, |v: NaiveDate|{
-                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).expect("Could not get epoch");
+                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).expect("this_shouldnt_fail");
                                 (v - epoch).num_days() as i32
                             },
                             NativeType::TimestampWithoutTimeZone => TimestampMicrosecondBuilder, NaiveDateTime, | v: NaiveDateTime | {
                             v.and_utc().timestamp_micros()
                         },
                             NativeType::String => StringBuilder, String, | v | v,
+                            NativeType::UUID => FixedSizeBinaryBuilder, Uuid, | v | v,
+
+                            // Vectors
+                            NativeType::VecI16 => ListBuilder<Int16Builder>, Vec<Option<i16>>, | v | v,
                             NativeType::VecI32 => ListBuilder<Int32Builder>, Vec<Option<i32>>, | v | v,
+                            NativeType::VecI64 => ListBuilder<Int64Builder>, Vec<Option<i64>>, | v | v,
+                            NativeType::VecF32 => ListBuilder<Float32Builder>, Vec<Option<f32>>, | v | v,
+                            NativeType::VecF64 => ListBuilder<Float64Builder>, Vec<Option<f64>>, | v | v,
                         });
+                        match ty {
+                            NativeType::VecUUID => {
+                                let downcasted_builder = builder
+                                    .as_any_mut()
+                                    .downcast_mut::<ListBuilder<FixedSizeBinaryBuilder>>().expect("??");
+                                let unwrapped_value = unwrap.try_get::<usize, Vec<Uuid>>(col_id);
+                                match unwrapped_value {
+                                    Ok(v) => {
+                                        for uuid in v {
+                                            let _ = downcasted_builder.values().append_value(uuid.as_bytes());
+                                        }
+                                        downcasted_builder.append(true);
+                                    }
+                                    Err(e) => {
+                                        // If the error was WasNull, we append a null.
+                                        if let Some(inner) = e.into_source() {
+                                            if inner.downcast_ref::<WasNull>().is_some() {
+                                                downcasted_builder.append_null()
+                                            } else {
+                                                panic!("Error trying to deserialize a type, {:?}", inner)
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            _ => {}
+                        }
                     }
                 }
 
@@ -293,7 +330,15 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::TIME => NativeType::Time,
 
         // Arrays
+        Type::UUID_ARRAY => NativeType::VecUUID,
+
+        Type::INT2_ARRAY => NativeType::VecI16,
         Type::INT4_ARRAY => NativeType::VecI32,
+        Type::INT8_ARRAY => NativeType::VecI64,
+
+        Type::FLOAT4_ARRAY => NativeType::VecF32,
+        Type::FLOAT8_ARRAY => NativeType::VecF64,
+
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

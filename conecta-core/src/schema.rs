@@ -50,6 +50,7 @@ pub enum NativeType {
     VecF64,
 
     VecString,
+    VecUUID,
 
     // Geo
     BidimensionalPoint,
@@ -74,6 +75,7 @@ impl NativeType {
 
             // Text
             NativeType::String => DataType::Utf8,
+            NativeType::UUID => DataType::FixedSizeBinary(16),
 
             // Time
             NativeType::Date32 => DataType::Date32,
@@ -95,11 +97,13 @@ impl NativeType {
             NativeType::BidimensionalPoint => {
                 DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
             }
+            NativeType::VecUUID => DataType::List(Arc::new(Field::new(
+                "_",
+                DataType::FixedSizeBinary(16),
+                true,
+            ))),
             _ => {
-                panic!(
-                    "Native type to arrow is not implemented. NativeType {:?}",
-                    self
-                )
+                panic!("Native type:: <{:?}> to arrow is not implemented", self)
             }
         }
     }

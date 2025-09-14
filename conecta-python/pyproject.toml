@@ -12,6 +12,7 @@ authors = [
 requires-python = ">=3.10"
 keywords = ["arrow", "databases", "sql", "dataframe"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",

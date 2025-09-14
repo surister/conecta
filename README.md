@@ -13,11 +13,8 @@
 [![docs](https://github.com/surister/conecta/actions/workflows/docs.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/docs.yml)
 [![Full build all targets](https://github.com/surister/conecta/actions/workflows/build_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/build_python.yml)
 [![release](https://github.com/surister/conecta/actions/workflows/release.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/release.yml)
-
 [![Test core](https://github.com/surister/conecta/actions/workflows/test_core.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_core.yml)
 [![Test python](https://github.com/surister/conecta/actions/workflows/test_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/test_python.yml)
-
-
 
 Conecta is a library designed to load data from SQL databases into [Arrow] with maximum 
 speed and memory efficiency by leveraging zero-copy and true concurrency in Python.

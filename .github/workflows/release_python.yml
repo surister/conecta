@@ -17,8 +17,41 @@ permissions:
   contents: read
 
 jobs:
+  sdist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Copy README.md to conecta-python for pypi
+        run: |
+          cp README.md conecta-python/README.md
+      - name: Set version
+        working-directory: conecta-python
+        run: |
+          sed -i -E "s/^version = \".*\"/version = \"${GITHUB_REF#refs/*/v}\"/" Cargo.toml
+          cat Cargo.toml
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: conecta-python
+          command: sdist
+          args: --out dist
+      # Canary test: If sdist fails, there might be something very wrong.
+      - name: Test sdist
+        run: |
+          ls
+          pip install --force-reinstall --verbose conecta-python/dist/*.tar.gz
+          python -c 'import conecta'
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: conecta-python/dist
+          if-no-files-found: 'error'
+
   linux:
     runs-on: ${{ matrix.platform.runner }}
+    needs: [ sdist ]
     strategy:
       matrix:
         platform:
@@ -64,6 +97,7 @@ jobs:
 
   musllinux:
     runs-on: ${{ matrix.platform.runner }}
+    needs: [ sdist ]
     strategy:
       matrix:
         platform:
@@ -77,6 +111,9 @@ jobs:
             target: armv7
     steps:
       - uses: actions/checkout@v5
+      - name: Copy README.md to conecta-python for pypi
+        run: |
+          cp README.md conecta-python/README.md
       - name: Set version
         working-directory: conecta-python
         run: |
@@ -102,6 +139,7 @@ jobs:
 
   windows:
     runs-on: ${{ matrix.platform.runner }}
+    needs: [ sdist ]
     strategy:
       matrix:
         platform:
@@ -111,13 +149,16 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v5
+      - name: Copy README.md to conecta-python for pypi
+        run: |
+          cp README.md conecta-python/README.md
       - name: Set version
         working-directory: conecta-python
         shell: pwsh
         run: |
-              $version = "${env:GITHUB_REF}" -replace '^refs/.*/v', ''
-              (Get-Content Cargo.toml) -replace '^version = ".*"', "version = `"$version`"" | Set-Content Cargo.toml
-              Get-Content Cargo.toml
+          $version = "${env:GITHUB_REF}" -replace '^refs/.*/v', ''
+          (Get-Content Cargo.toml) -replace '^version = ".*"', "version = `"$version`"" | Set-Content Cargo.toml
+          Get-Content Cargo.toml
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
@@ -138,6 +179,7 @@ jobs:
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
+    needs: [ sdist ]
     strategy:
       matrix:
         platform:
@@ -147,6 +189,9 @@ jobs:
             target: aarch64
     steps:
       - uses: actions/checkout@v5
+      - name: Copy README.md to conecta-python for pypi
+        run: |
+          cp README.md conecta-python/README.md
       - name: Set version
         working-directory: conecta-python
         run: |
@@ -169,34 +214,12 @@ jobs:
           path: conecta-python/dist
           if-no-files-found: 'error'
 
-  sdist:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: Set version
-        working-directory: conecta-python
-        run: |
-          sed -i -E "s/^version = \".*\"/version = \"${GITHUB_REF#refs/*/v}\"/" Cargo.toml
-          cat Cargo.toml
-      - name: Build sdist
-        uses: PyO3/maturin-action@v1
-        with:
-          working-directory: conecta-python
-          command: sdist
-          args: --out dist
-      - name: Upload sdist
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-sdist
-          path: conecta-python/dist
-          if-no-files-found: 'error'
-
   release:
     name: Release
     runs-on: ubuntu-latest
     environment: pypi
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [linux, musllinux, windows, macos, sdist]
+    needs: [ linux, musllinux, windows, macos, sdist ]
     permissions:
       # Use to sign the release artifacts
       id-token: write

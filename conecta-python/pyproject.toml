@@ -4,13 +4,36 @@ build-backend = "maturin"
 
 [project]
 name = "conecta"
+description = "Load data from SQL databases to Arrow"
+readme = "README.md"
+authors = [
+    { name = "surister", email = "surister98@gmail.com"}
+]
 requires-python = ">=3.10"
+keywords = ["arrow", "databases", "sql", "dataframe"]
 classifiers = [
-    "Programming Language :: Rust",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
 ]
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/surister/conecta/"
+Documentation = "https://conecta.surister.dev/"
+Repository = "https://github.com/surister/conecta/"
+Changelog = "https://github.com/surister/conecta/releases"
+
 dependencies = [
 ]
 

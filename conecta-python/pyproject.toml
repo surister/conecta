@@ -27,6 +27,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 dynamic = ["version"]
+dependencies = [
+]
 
 [project.urls]
 Homepage = "https://github.com/surister/conecta/"
@@ -34,8 +36,7 @@ Documentation = "https://conecta.surister.dev/"
 Repository = "https://github.com/surister/conecta/"
 Changelog = "https://github.com/surister/conecta/releases"
 
-dependencies = [
-]
+
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

@@ -156,6 +156,7 @@ impl Source for PostgresSource {
                             NativeType::VecF32 => ListBuilder<Float32Builder>, Vec<Option<f32>>, | v | v,
                             NativeType::VecF64 => ListBuilder<Float64Builder>, Vec<Option<f64>>, | v | v,
                             NativeType::VecString => ListBuilder<StringBuilder>, Vec<Option<String>>, | v | v,
+                            NativeType::VecBool => ListBuilder<BooleanBuilder>, Vec<Option<bool>>, | v | v,
                         });
 
                         // VecUUID is not above because it follows a different API due to FixedSizeBinaryBuilder.
@@ -335,6 +336,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         // Arrays
         Type::UUID_ARRAY => NativeType::VecUUID,
         Type::TEXT_ARRAY => NativeType::VecString,
+        Type::BOOL_ARRAY => NativeType::VecBool,
 
         Type::INT2_ARRAY => NativeType::VecI16,
         Type::INT4_ARRAY => NativeType::VecI32,

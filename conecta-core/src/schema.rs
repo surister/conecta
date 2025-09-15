@@ -104,6 +104,9 @@ impl NativeType {
                 DataType::FixedSizeBinary(16),
                 true,
             ))),
+            NativeType::VecBool => {
+                DataType::List(Arc::new(Field::new("_", DataType::Boolean, true)))
+            }
             _ => {
                 panic!("Native type:: <{:?}> to arrow is not implemented", self)
             }

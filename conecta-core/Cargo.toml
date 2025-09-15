@@ -15,7 +15,7 @@ sqlparser = "0.58.0"
 rayon = "1.11.0"
 chrono = "0.4.42"
 
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0.223", features = ["derive"] }
 uuid = "1.18.1"
 
 [dev-dependencies]

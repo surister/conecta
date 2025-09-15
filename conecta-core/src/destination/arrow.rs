@@ -16,6 +16,9 @@ pub fn get_arrow_builders(schema: &Schema, capacity: usize) -> Vec<Box<dyn Array
             NativeType::VecI64 => builders.push(Box::new(ListBuilder::new(Int64Builder::new()))),
             NativeType::VecF32 => builders.push(Box::new(ListBuilder::new(Float32Builder::new()))),
             NativeType::VecF64 => builders.push(Box::new(ListBuilder::new(Float64Builder::new()))),
+            NativeType::VecString => {
+                builders.push(Box::new(ListBuilder::new(StringBuilder::new())))
+            }
             NativeType::VecUUID => {
                 builders.push(Box::new(ListBuilder::new(FixedSizeBinaryBuilder::new(16))))
             }

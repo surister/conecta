@@ -38,6 +38,8 @@ pub enum NativeType {
 
     // Vectors
     VecBool,
+    VecString,
+    VecUUID,
     VecChar,
 
     VecI8,
@@ -48,9 +50,6 @@ pub enum NativeType {
     VecF16,
     VecF32,
     VecF64,
-
-    VecString,
-    VecUUID,
 
     // Geo
     BidimensionalPoint,
@@ -96,6 +95,9 @@ impl NativeType {
             }
             NativeType::BidimensionalPoint => {
                 DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
+            }
+            NativeType::VecString => {
+                DataType::List(Arc::new(Field::new("_", DataType::Utf8, true)))
             }
             NativeType::VecUUID => DataType::List(Arc::new(Field::new(
                 "_",

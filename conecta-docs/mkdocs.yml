@@ -4,19 +4,22 @@ site_author: surister
 watch: [./docs/]
 
 nav:
-  - Project:
-      - Development: project/development.md
-      - Internals: project/internals.md
-  - Using the library:
-      - Loading data: library/read_sql.md
-      - Optimizing further: library/optimizing_further.md
-  - Source databases:
-      - Postgres: databases/postgres.md
-  - Arrow backends: arrow_backends.md
-  - ConnectorX: connectorx.md
-
+  - Reference:
+      - reference/index.md
+      - Development: reference/development.md
+      - Architecture: reference/architecture.md
+      - Arrow backends: reference/arrow_backends.md
+      - ConnectorX: reference/connectorx.md
+      - Source databases:
+          - Postgres: reference/databases/postgres.md
+  - How to:
+      - how-to/index.md
+      - Load data: how-to/read_sql.md
+      - Optimize further: how-to/optimizing_further.md
+      - Use in polars: how-to/polars.md
 theme:
   name: material
+
   palette:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
@@ -35,6 +38,7 @@ theme:
     repo: fontawesome/brands/github
   features:
     - content.code.copy
+    - navigation.indexes
 plugins:
   - search
   - gen-files:

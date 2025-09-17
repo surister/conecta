@@ -28,8 +28,8 @@ as it is. Nonetheless, there are several things that can be done, like improving
 pre-allocation in arrow and letting the user tweak several internals to optimize for use case.
 
 4. I want conecta to **focus** in `arrow`, I think that it is hard to fully optimize for everything,
-therefore I chose to optimize for one destination only. That does not mean that you cannot use this to load
-data to pandas, `pyarrow` for instance supports `df.to_pandas()`
+therefore I chose to optimize for one destination only. That does not mean that you cannot use
+this to load data to pandas, `pyarrow` for instance supports `df.to_pandas()`
 
 5. I want conecta to have full **feature parity** in all sources when possible.
 
@@ -38,17 +38,17 @@ data to pandas, `pyarrow` for instance supports `df.to_pandas()`
 I am obviously biased, but being honest, as I'm writing this 2025-07-31 you should use connectorx,
 conecta is still not mature enough.
 
-Now, once it's mature enough, I would recommend to benchmark performance, to check maintainment status and
-see if you need the extra features that conecta offers.
+Now, once it's mature enough, I would recommend to benchmark performance, to check maintainment
+status and see if you need the extra features that conecta offers.
 
 ## Difference between conecta and connectorx.
 
-There are several differences between connecta and connectorx: 
+There are several differences between `conecta` and `connectorx`: 
 
 * conecta has a different way of moving record batches (data) to python.
 While internally it might be similar, connectorx gets the pointers of all record batches using the
-arrow's C data interface, later in python, record batches are reconstructed and a pyarrow table is made
-from those batches. In conecta we completely offload that work to [pyo3-arrow](https://crates.io/crates/pyo3-arrow),
+arrow's C data interface, later in python, record batches are reconstructed, and a pyarrow 
+table is made from those batches. In conecta we completely offload that work to [pyo3-arrow](https://crates.io/crates/pyo3-arrow),
 simplifying our code base and allowing us to also support other arrow backends.
 * Conecta does pre-allocation in arrow, leading to smaller memory usage, conectorx only pre-allocates
 when the result is pandas.
@@ -63,8 +63,8 @@ poor. You can read more about this in [(todo, write article )indepth connectorx 
 
 ## Connectorx is awesome.
 
-The team that developed connectorx is awesome and I thank them for their job, there are 1.8k commits,
-not an easy task.
+The team that developed connectorx is awesome and I thank them for their job, there are 1.8k
+commits, not an easy task.
 
 Their work was a huge inspiration for this library.
 

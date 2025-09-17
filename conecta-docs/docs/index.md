@@ -1,18 +1,39 @@
 # Conecta - Overview.
 
 This is the documentation for [Conecta](https://github.com/surister/conecta),
-a python library designed to load data from SQL databases to `arrow` with maximum speed
+a python library designed to load data from SQL databases to [`arrow`](https://arrow.apache.org/) with maximum speed
 and memory efficiency by leveraging zero-copy and true concurrency.
 
-## Documentation index:
-1. How to use the library, see [read sql](../using_the_library/read_sql.md).
-2. Different arrow backends that we support, see [arrow backends](arrow_backends.md)
-3. How to optimize further your loading times and memory, see [optimize further](../using_the_library/optimizing_further.md)
-## TODO: Feature matrix
 
-## Project layout
+## Getting started
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+The fastest way to get started is to run:
+
+```shell
+pip install conecta
+```
+
+And start loading data:
+
+```python
+from conecta import read_sql
+
+table = read_sql(
+    "postgres://user:password@localhost:5400/database",
+    queries=["select * from lineitem"],
+    partition_on="l_orderkey",
+    partition_num=4
+)
+```
+
+## Documentation overview:
+
+This documentation follows [Diátaxis](https://diataxis.fr/)
+
+I recommend that you start on the how-to guide [Load data](/how-to/read_sql)
+
+## Features
+* Connection pooling
+* Real parallel multithreading
+* Zero-copy mindset, data is only copied **once**
+* Rich datatypes

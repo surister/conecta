@@ -6,15 +6,15 @@ on:
 
   workflow_dispatch:
   push:
-    paths:
-      - 'conecta-core/**.rs'
-      - 'conecta-core/Cargo.toml'
+    paths-ignore:
+      - '*.py'
+      - '*.md'
     branches:
       - master
   pull_request:
-    paths:
-      - 'conecta-core/**.rs'
-      - 'conecta-core/Cargo.toml'
+    paths-ignore:
+      - '*.py'
+      - '*.md'
     branches:
       - master
 

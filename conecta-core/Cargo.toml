@@ -7,7 +7,7 @@ edition = "2021"
 peak_alloc = "0.3.0"
 log = "0.4.28"
 
-arrow = { version = "56.1.0", features = ["prettyprint", "ffi"] }
+arrow = { version = "56.2.0", features = ["prettyprint", "ffi"] }
 
 r2d2_postgres = "0.18.2"
 postgres = { version = "0.19", features = ["with-chrono-0_4", "with-uuid-1"] }

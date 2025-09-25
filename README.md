@@ -9,6 +9,7 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/conecta)
 ![PyPI - Status](https://img.shields.io/pypi/status/conecta)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsurister%2Fconecta%2Frefs%2Fheads%2Fmaster%2Fconecta-python%2Fpyproject.toml)
+![Static Badge](https://img.shields.io/badge/arrow%3D56.2-latest-bright?logo=apache)
 
 [![docs](https://github.com/surister/conecta/actions/workflows/docs.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/docs.yml)
 [![Full build all targets](https://github.com/surister/conecta/actions/workflows/build_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/build_python.yml)

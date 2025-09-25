@@ -37,8 +37,6 @@ Documentation = "https://conecta.surister.dev/"
 Repository = "https://github.com/surister/conecta/"
 Changelog = "https://github.com/surister/conecta/releases"
 
-
-
 [tool.maturin]
 features = ["pyo3/extension-module"]
 

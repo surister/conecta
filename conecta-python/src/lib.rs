@@ -1,22 +1,12 @@
-use conecta_core::partition::PartitionConfig;
-use conecta_core::source::get_source;
-use conecta_core::{make_record_batches, test_from_core};
+use log::debug;
 use std::sync::Arc;
 
-use log::debug;
 use pyo3::prelude::*;
 use pyo3_arrow::error::PyArrowResult;
 use pyo3_arrow::PyTable;
 
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b + test_from_core() as usize).to_string())
-}
-#[pyfunction]
-fn two(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b + test_from_core() as usize).to_string())
-}
+use conecta_core::{_create_partition_plan, make_record_batches};
+
 #[pyfunction]
 fn create_partition_plan(
     // Source.
@@ -27,16 +17,26 @@ fn create_partition_plan(
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
+
+    // Extra configuration.
+    max_pool_size: Option<u32>,
+    disable_preallocation: bool,
 ) -> PyResult<String> {
-    // let partition_config =
-    //     PartitionConfig::new(queries, partition_on, partition_num, partition_range);
-    //
-    // let source = get_source(connection_string, None);
-    // let plan = conecta_core::metadata::create_partition_plan(&source, partition_config);
-    // let json = serde_json::to_string(&plan).map_err(|e| {
-    //     PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Serialization error: {}", e))
-    // })?;
-    Ok("s".to_ascii_lowercase())
+    let plan = _create_partition_plan(
+        connection_string,
+        queries,
+        partition_on,
+        partition_range,
+        partition_num,
+        max_pool_size,
+        disable_preallocation,
+    );
+
+    let json = serde_json::to_string(&plan).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Serialization error: {}", e))
+    })?;
+
+    Ok(json)
 }
 
 #[pyfunction]
@@ -106,7 +106,6 @@ pub fn read_sql(
 /// A Python module implemented in Rust.
 #[pymodule]
 fn conecta(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
     m.add_function(wrap_pyfunction!(create_partition_plan, m)?)?;
     m.add_function(wrap_pyfunction!(read_sql, m)?)?;
     Ok(())

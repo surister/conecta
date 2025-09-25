@@ -5,7 +5,6 @@ import json
 import re
 from typing import Literal, Optional, LiteralString
 
-from .conecta import sum_as_string as _sum_as_string
 from .conecta import create_partition_plan as _create_partition_plan
 from .conecta import read_sql as _read_sql
 
@@ -132,6 +131,7 @@ class PartitionConfig:
     partition_range: tuple[int]
     needed_metadata_from_source: str
     query_partition_mode: str
+    disable_preallocation: bool
 
 
 @dataclasses.dataclass
@@ -150,9 +150,9 @@ class PartitionPlan:
     """
     min_value: int
     max_value: int
-    count: int
+    counts: list
     metadata_query: str
-    query_data: list[str]
+    data_queries: list[str]
     partition_config: PartitionConfig
 
     @classmethod
@@ -183,8 +183,16 @@ def create_partition_plan(
         partition_range: tuple = None,
         partition_num: int = None
 ):
-    plan = json.loads(
-        _create_partition_plan(conn, queries, partition_on, partition_range, partition_num)
+    plan = json.loads( 
+        _create_partition_plan(
+            conn,
+            queries,
+            partition_on,
+            partition_range,
+            partition_num,
+            1,
+            False
+        )
     )
     return PartitionPlan.from_dict(plan)
 
@@ -249,22 +257,3 @@ def read_sql(
                      return_backend=return_backend,
                      **extra_conf
                      )
-
-# Todo: Add support for detecting bad arguments like 'return_type'
-# (which is connectorx API), and recommend the new name.
-# def read_sql(
-#         conn: str,
-#         query: str,
-#         *,
-#         pre_query: Optional["str"] = None,
-#         post_query: Optional["str"] = None,
-#         df_return_type: Literal["arrow", "pandas", "polars"] = "arrow",
-#         protocol: str = "default",  # options depends on source.
-#         # Todo: Can we give the user the option to pass a method, and we run that method to calculate the partition number?
-#         # Default is 'do nothing automatically', let the user input.
-#         partition_strategy: Literal["default", "high", "low"] = "default",
-#         partition_column,
-#         partition_range: Optional[tuple[int, int]],
-#         partition_n: Optional[int],
-# ):
-#     pass

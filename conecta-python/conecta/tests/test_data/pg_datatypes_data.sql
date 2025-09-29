@@ -1,0 +1,51 @@
+INSERT INTO pg_datatypes (small_int, int_, big_int, decimal_, numeric_,
+                       real_, double_,
+                       char_, bpchar_, varchar_, text_,
+                       bool_, date_, time_, timetz_, timestamp_, timestamptz_, interval_,
+                       json_, jsonb_, uuid_, bytea_,
+                       point_, circle_,
+                       int_array, text_array,
+                       smallint_array, bigint_array, decimal_array, numeric_array, real_array,
+                       double_array,
+                       char_array, varchar_array,
+                       bool_array, date_array, time_array, timetz_array, timestamp_array,
+                       timestamptz_array, interval_array,
+                       json_array, jsonb_array, uuid_array, bytea_array,
+                       point_array, circle_array,
+                       int_range, num_range, ts_range,
+                       int4range_array, numrange_array, tsrange_array)
+VALUES (5, 1000, 9000000000, 12345.67, 98765.4321,
+        3.14, 2.71828,
+        'O', 'abcde', 'Hello, world!', 'Some long text here...',
+        TRUE, '2025-08-22', '14:30:00', '14:30:00+02', '2025-08-22 14:30:00',
+        '2025-08-22 14:30:00+00', '2 days 3 hours',
+        '{"key": "value"}', '{"user": "alice"}', gen_random_uuid(),'\\xDEADBEEF',
+        '(1,2)', '<(0,0),5>',
+        ARRAY[1, 2, 3], ARRAY['foo', 'bar', 'baz'],
+        ARRAY[1::smallint, 2::smallint], ARRAY[1234567890123::bigint, 42::bigint],
+        ARRAY[12.34::decimal(10, 2), 56.78::decimal(10, 2)],
+        ARRAY [123.4567::numeric(12, 4), 0.0001::numeric(12, 4)],
+        ARRAY [1.1::real, 2.2::real], ARRAY [3.14159::double precision, 2.71828::double precision],
+        ARRAY ['ab'::char(5), 'xy'::char(5)], ARRAY ['hello'::varchar(50), 'world'::varchar(50)],
+        ARRAY [TRUE, FALSE], ARRAY ['2025-08-22'::date, '2024-01-01'::date],
+        ARRAY ['14:30:00'::time, '09:00:00'::time],
+        ARRAY ['14:30:00+02'::timetz, '09:00:00+00'::timetz],
+        ARRAY ['2025-08-22 14:30:00'::timestamp, '2024-12-31 23:59:59'::timestamp],
+        ARRAY ['2025-08-22 14:30:00+00'::timestamptz, '2024-12-31 23:59:59+00'::timestamptz],
+        ARRAY ['2 days'::interval, '3 hours'::interval],
+        ARRAY ['{
+          "a": 1
+        }'::json, '{
+          "b": 2
+        }'::json], ARRAY ['{
+    "x": 10
+  }'::jsonb, '{
+    "y": 20
+  }'::jsonb],
+        ARRAY [gen_random_uuid(), gen_random_uuid()],
+        ARRAY [E'\\xDEAD'::bytea, E'\\xBEEF'::bytea],
+        ARRAY ['(1,2)'::point, '(3,4)'::point], ARRAY ['<(0,0),5>'::circle, '<(1,1),2>'::circle],
+        '[1,10]', '[0.5, 20.5]', '[2025-01-01 00:00, 2025-12-31 23:59]',
+        ARRAY ['[1,10]'::int4range, '[11,20]'::int4range],
+        ARRAY ['[0.5, 20.5]'::numrange, '(20.5, 30.5]'::numrange],
+        ARRAY ['[2025-01-01 00:00, 2025-12-31 23:59]'::tsrange, '[2024-01-01 00:00, 2024-06-30 00:00)'::tsrange]);

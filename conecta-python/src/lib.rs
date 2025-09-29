@@ -13,7 +13,7 @@ fn create_partition_plan(
     connection_string: &str,
 
     // Partition Configuration.
-    queries: Vec<String>,
+    query: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
@@ -24,7 +24,7 @@ fn create_partition_plan(
 ) -> PyResult<String> {
     let plan = _create_partition_plan(
         connection_string,
-        queries,
+        query,
         partition_on,
         partition_range,
         partition_num,
@@ -46,7 +46,7 @@ pub fn read_sql(
     connection_string: &str,
 
     // Partition Configuration
-    queries: Vec<String>,
+    query: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
@@ -63,11 +63,10 @@ pub fn read_sql(
     let (arrays, schema) = py.allow_threads(|| {
         conecta_core::read_sql(
             connection_string,
-            queries,
+            query,
             partition_on,
             partition_range,
             partition_num,
-
             // Extra configuration
             max_pool_size,
             preallocation,

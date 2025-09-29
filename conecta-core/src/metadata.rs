@@ -37,12 +37,12 @@ pub fn create_partition_plan(
     };
 
     // TODO: I'm not sure we need this anymore (merge_queries).
-    let query = match partition_config.queries.len() {
-        1 => &partition_config.queries.get(0).unwrap(),
+    let query = match partition_config.query.len() {
+        1 => &partition_config.query.get(0).unwrap(),
 
         // We always merge the metadata queries into one, to avoid the overhead of sending
         // several queries.
-        _ => &source.merge_queries(&partition_config.queries),
+        _ => &source.merge_queries(&partition_config.query),
     };
 
     match partition_config.needed_metadata_from_source {
@@ -58,7 +58,7 @@ pub fn create_partition_plan(
             // Create the bounded queries.
             data_queries = created_bounded_queries(
                 source,
-                partition_config.queries[0].as_str(),
+                partition_config.query[0].as_str(),
                 &partition_config.partition_on.clone().unwrap(),
                 partition_config.partition_num.unwrap(),
                 min_value.expect("should have a valid min at this point"),
@@ -68,7 +68,7 @@ pub fn create_partition_plan(
 
         // If we don't need to create any query (by partitioning it), we just set query_data
         // to whatever query(s) the user provided.
-        _ => data_queries = Vec::from(partition_config.queries.clone()),
+        _ => data_queries = Vec::from(partition_config.query.clone()),
     }
     // todo: remove or followup.
     let counts = vec![];

@@ -3,7 +3,7 @@
 import dataclasses
 import json
 import re
-from typing import Literal, Optional, LiteralString
+from typing import Literal, Optional
 
 from .conecta import create_partition_plan as _create_partition_plan
 from .conecta import read_sql as _read_sql
@@ -125,7 +125,7 @@ class PartitionConfig:
          https://github.com/surister/conecta/blob/70af291199b1a794e00455816f01d925f5a8c040/conecta-core/src/metadata.rs#L17
         ...
     """
-    queries: list[str]
+    query: list[str]
     partition_on: Optional[str]
     partition_num: Optional[int]
     partition_range: tuple[int]
@@ -178,18 +178,21 @@ def sum_as_string(a: int, b: int) -> str:
 
 def create_partition_plan(
         conn: str,
-        queries: list[str],
+        query: list[str] | str,
         partition_on: Optional[str] = None,
         partition_range: tuple = None,
         partition_num: int = None,
         **config
 ) -> PartitionPlan:
+    if isinstance(query, str):
+        query = list(query)
+
     pool_size = config.get('max_pool_size')
     preallocation = config.get('preallocation')
     plan = json.loads( 
         _create_partition_plan(
             conn,
-            queries,
+            query,
             partition_on,
             partition_range,
             partition_num,
@@ -202,13 +205,16 @@ def create_partition_plan(
 
 def read_sql(
         conn: str,
-        queries: list[str],
+        query: list[str] | str,
         partition_on: Optional[str] = None,
         partition_range: Optional[tuple] = None,
         partition_num: Optional[int] = None,
         return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow',
         **extra_conf
 ):
+    if isinstance(query, str):
+        query = [query]
+
     extra_conf_options = {"max_pool_size", "preallocation"}
 
     default_conf = {
@@ -253,7 +259,7 @@ def read_sql(
             raise ValueError(f'Return backend not supported.')
 
     return _read_sql(conn,
-                     queries=queries,
+                     query=query,
                      partition_on=partition_on,
                      partition_range=partition_range,
                      partition_num=partition_num,

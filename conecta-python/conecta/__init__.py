@@ -219,7 +219,7 @@ def read_sql(
 
     default_conf = {
         'max_pool_size': None,
-        'preallocation': True
+        'preallocation': False
     }
 
     if extra_conf is None:

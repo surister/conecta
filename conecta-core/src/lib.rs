@@ -65,14 +65,14 @@ pub fn _create_partition_plan(
 
     // Extra configuration.
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 ) -> PartitionPlan {
     let partition_config = PartitionConfig::new(
         queries.clone(),
         partition_on,
         partition_num,
         partition_range,
-        disable_preallocation,
+        preallocation,
     );
 
     let max_pool_size = max_pool_size.unwrap_or_else(|| {
@@ -116,7 +116,7 @@ pub fn read_sql(
 
     // Extra configuration.
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
     perf_start();
 
@@ -125,7 +125,7 @@ pub fn read_sql(
         partition_on,
         partition_num,
         partition_range,
-        disable_preallocation,
+        preallocation,
     );
 
     let max_pool_size = max_pool_size.unwrap_or_else(|| {

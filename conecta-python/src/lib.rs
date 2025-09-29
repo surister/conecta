@@ -20,7 +20,7 @@ fn create_partition_plan(
 
     // Extra configuration.
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 ) -> PyResult<String> {
     let plan = _create_partition_plan(
         connection_string,
@@ -29,7 +29,7 @@ fn create_partition_plan(
         partition_range,
         partition_num,
         max_pool_size,
-        disable_preallocation,
+        preallocation,
     );
 
     let json = serde_json::to_string(&plan).map_err(|e| {
@@ -53,7 +53,7 @@ pub fn read_sql(
 
     // Extra configuration
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 
     // Return configuration
     return_backend: String,
@@ -67,9 +67,10 @@ pub fn read_sql(
             partition_on,
             partition_range,
             partition_num,
+
             // Extra configuration
             max_pool_size,
-            disable_preallocation,
+            preallocation,
         )
     });
 

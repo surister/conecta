@@ -74,13 +74,6 @@ Supported sources:
 ## How to install.
 You can get started by running `pip install conecta`
 
-## When should you use `conecta`.
-
-
-
-## How does conecta work.
-
-
 ## Supported architectures
 
 Conecta is compiled in almost all popular architectures.
@@ -96,9 +89,7 @@ Supported architectures:
 Unsupported architectures:
 * linux: IBM s390x
 
-
 [Arrow]: https://arrow.apache.org/
-
 [pyarrow]: https://pypi.org/project/pyarrow/
 [arro3]: https://pypi.org/project/arro3-core/
 [nanoarrow]: https://pypi.org/project/nanoarrow/

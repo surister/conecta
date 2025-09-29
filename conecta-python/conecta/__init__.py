@@ -131,7 +131,7 @@ class PartitionConfig:
     partition_range: tuple[int]
     needed_metadata_from_source: str
     query_partition_mode: str
-    disable_preallocation: bool
+    preallocation: bool
 
 
 @dataclasses.dataclass
@@ -181,8 +181,11 @@ def create_partition_plan(
         queries: list[str],
         partition_on: Optional[str] = None,
         partition_range: tuple = None,
-        partition_num: int = None
-):
+        partition_num: int = None,
+        **config
+) -> PartitionPlan:
+    pool_size = config.get('max_pool_size')
+    preallocation = config.get('preallocation')
     plan = json.loads( 
         _create_partition_plan(
             conn,
@@ -190,8 +193,8 @@ def create_partition_plan(
             partition_on,
             partition_range,
             partition_num,
-            1,
-            False
+            pool_size if pool_size is not None else 1,
+            preallocation if preallocation is not None else True
         )
     )
     return PartitionPlan.from_dict(plan)
@@ -201,16 +204,16 @@ def read_sql(
         conn: str,
         queries: list[str],
         partition_on: Optional[str] = None,
-        partition_range: tuple = None,
-        partition_num: int = None,
+        partition_range: Optional[tuple] = None,
+        partition_num: Optional[int] = None,
         return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow',
-        extra_conf: dict = None
+        **extra_conf
 ):
-    extra_conf_options = {"max_pool_size", "disable_preallocation"}
+    extra_conf_options = {"max_pool_size", "preallocation"}
 
     default_conf = {
         'max_pool_size': None,
-        'disable_preallocation': False
+        'preallocation': False
     }
 
     if extra_conf is None:

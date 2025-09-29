@@ -10,7 +10,7 @@ pub struct PartitionConfig {
     pub partition_on: Option<String>,
     pub partition_num: Option<u16>,
     pub partition_range: Option<(i64, i64)>,
-    pub disable_preallocation: bool,
+    pub preallocation: bool,
 
     // Computed by us from the user parameters.
     pub needed_metadata_from_source: NeededMetadataFromSource,
@@ -23,7 +23,7 @@ impl PartitionConfig {
         partition_on: Option<String>,
         partition_num: Option<u16>,
         partition_range: Option<(i64, i64)>,
-        disable_preallocation: bool,
+        preallocation: bool,
     ) -> Self {
         if queries.is_empty() {
             panic!("must pass some queries!")
@@ -32,9 +32,6 @@ impl PartitionConfig {
         if (partition_num.is_some() || partition_on.is_some() || partition_range.is_some())
             && queries.len() > 1
         {
-            println!("{:?}", partition_num);
-            println!("{:?}", partition_range);
-            println!("{:?}", partition_on);
             panic!(
                 "Double partition scheme error: You have passed several queries
                 (user defined partition) and one or some partition_* option 
@@ -92,7 +89,7 @@ impl PartitionConfig {
             partition_on,
             needed_metadata_from_source,
             query_partition_mode: partition_mode,
-            disable_preallocation,
+            preallocation,
         }
     }
 }

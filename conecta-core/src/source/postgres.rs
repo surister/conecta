@@ -88,7 +88,7 @@ impl Source for PostgresSource {
 
                 match partition_plan.partition_config.needed_metadata_from_source {
                     NeededMetadataFromSource::CountAndMinMax | NeededMetadataFromSource::Count
-                        if !partition_plan.partition_config.disable_preallocation =>
+                        if partition_plan.partition_config.preallocation =>
                     {
                         let count_query = conn.query(
                             format!("SELECT count(*) FROM ({:}) as q_count", query).as_str(),

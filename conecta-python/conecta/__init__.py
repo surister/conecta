@@ -219,7 +219,7 @@ def read_sql(
 
     default_conf = {
         'max_pool_size': None,
-        'preallocation': False
+        'preallocation': True
     }
 
     if extra_conf is None:
@@ -247,16 +247,16 @@ def read_sql(
             except ImportError as e:
                 raise ImportError(
                     f'Return backend {p!r} needs the package \'arro3-core\','
-                    f' you can fix this with `pip install pyarrow`') from e
+                    f' you can fix this with `pip install arro3-core`') from e
         case 'nanoarrow' as p:
             try:
-                import pyarrow as arrow
+                import nanoarrow as arrow
             except ImportError as e:
                 raise ImportError(
                     f'Return backend {p!r} needs the package \'nanoarrow\','
-                    f' you can fix this with `pip install pyarrow`') from e
+                    f' you can fix this with `pip install nanoarrow`') from e
         case _:
-            raise ValueError(f'Return backend not supported.')
+            raise ValueError(f'The specified return_backend {return_backend!r} is not supported.')
 
     return _read_sql(conn,
                      query=query,

@@ -11,7 +11,7 @@ arrow = { version = "56.2.0", features = ["prettyprint", "ffi"] }
 
 r2d2_postgres = "0.18.2"
 postgres = { version = "0.19", features = ["with-chrono-0_4", "with-uuid-1"] }
-sqlparser = "0.58.0"
+sqlparser = "0.59.0"
 rayon = "1.11.0"
 chrono = "0.4.42"
 

@@ -58,30 +58,30 @@ pub fn _create_partition_plan(
     connection_string: &str,
 
     // Partition Configuration.
-    queries: Vec<String>,
+    query: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 
     // Extra configuration.
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 ) -> PartitionPlan {
     let partition_config = PartitionConfig::new(
-        queries.clone(),
+        query.clone(),
         partition_on,
         partition_num,
         partition_range,
-        disable_preallocation,
+        preallocation,
     );
 
     let max_pool_size = max_pool_size.unwrap_or_else(|| {
         // If the user does not provide max_pool_size, we will set it to the number of partitions
         // that we will end up using, we cannot use any info from the partition_plan yet.
         // We will use a dirty but correct calculation of how many threads/partitions we will use.
-        match queries.len() {
+        match query.len() {
             1 => partition_num.unwrap_or(1) as u32,
-            _ => queries.len() as u32,
+            _ => query.len() as u32,
         }
     });
 
@@ -109,32 +109,32 @@ pub fn read_sql(
     connection_string: &str,
 
     // Partition Configuration.
-    queries: Vec<String>,
+    query: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 
     // Extra configuration.
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 ) -> (Vec<Vec<ArrayRef>>, crate::schema::Schema) {
     perf_start();
 
     let partition_config = PartitionConfig::new(
-        queries.clone(),
+        query.clone(),
         partition_on,
         partition_num,
         partition_range,
-        disable_preallocation,
+        preallocation,
     );
 
     let max_pool_size = max_pool_size.unwrap_or_else(|| {
         // If the user does not provide max_pool_size, we will set it to the number of partitions
         // that we will end up using, we cannot use any info from the partition_plan yet.
         // We will use a dirty but correct calculation of how many threads/partitions we will use.
-        match queries.len() {
+        match query.len() {
             1 => partition_num.unwrap_or(1) as u32,
-            _ => queries.len() as u32,
+            _ => query.len() as u32,
         }
     });
 
@@ -161,6 +161,6 @@ pub fn read_sql(
 
     perf_checkpoint("Created query plan", true);
 
-    let schema: crate::schema::Schema = source.get_schema_of(queries.clone().get(0).unwrap());
+    let schema: crate::schema::Schema = source.get_schema_of(query.clone().get(0).unwrap());
     source.process_partition_plan(partition_plan, schema)
 }

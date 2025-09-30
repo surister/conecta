@@ -39,7 +39,7 @@ def _read_sql_conecta(
 
         tbl = conecta.read_sql(
             conn=connection_uri,
-            queries=query,
+            query=query,
             return_backend='pyarrow',
             partition_on=partition_on,
             partition_range=partition_range,
@@ -47,7 +47,7 @@ def _read_sql_conecta(
             # protocol=protocol, Not yet implemented.
         )
     except BaseException as err:
-        # basic sanitisation of /user:pass/ credentials exposed in connectorx errs
+        # basic sanitization of /user:pass/ credentials exposed in connectorx errs
         errmsg = re.sub("://[^:]+:[^:]+@", "://***:***@", str(err))
         raise type(err)(errmsg) from err
     return from_arrow(tbl, schema_overrides=schema_overrides)

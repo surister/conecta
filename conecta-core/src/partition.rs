@@ -6,11 +6,11 @@ use serde::Serialize;
 #[derive(Debug, Serialize)]
 pub struct PartitionConfig {
     // Given by the user.
-    pub queries: Vec<String>,
+    pub query: Vec<String>,
     pub partition_on: Option<String>,
     pub partition_num: Option<u16>,
     pub partition_range: Option<(i64, i64)>,
-    pub disable_preallocation: bool,
+    pub preallocation: bool,
 
     // Computed by us from the user parameters.
     pub needed_metadata_from_source: NeededMetadataFromSource,
@@ -19,22 +19,19 @@ pub struct PartitionConfig {
 
 impl PartitionConfig {
     pub fn new(
-        queries: Vec<String>,
+        query: Vec<String>,
         partition_on: Option<String>,
         partition_num: Option<u16>,
         partition_range: Option<(i64, i64)>,
-        disable_preallocation: bool,
+        preallocation: bool,
     ) -> Self {
-        if queries.is_empty() {
+        if query.is_empty() {
             panic!("must pass some queries!")
         }
 
         if (partition_num.is_some() || partition_on.is_some() || partition_range.is_some())
-            && queries.len() > 1
+            && query.len() > 1
         {
-            println!("{:?}", partition_num);
-            println!("{:?}", partition_range);
-            println!("{:?}", partition_on);
             panic!(
                 "Double partition scheme error: You have passed several queries
                 (user defined partition) and one or some partition_* option 
@@ -75,24 +72,20 @@ impl PartitionConfig {
             }
         };
 
-        let partition_mode = match (
-            partition_on.is_some(),
-            partition_num.is_some(),
-            queries.len(),
-        ) {
+        let partition_mode = match (partition_on.is_some(), partition_num.is_some(), query.len()) {
             (true, true, 1) => QueryPartitioningMode::OnePartitionedQuery,
             (_, _, n) if n > 1 => QueryPartitioningMode::PartitionedQueries,
             _ => QueryPartitioningMode::OneUnpartitionedQuery,
         };
 
         PartitionConfig {
-            queries,
+            query,
             partition_range,
             partition_num,
             partition_on,
             needed_metadata_from_source,
             query_partition_mode: partition_mode,
-            disable_preallocation,
+            preallocation,
         }
     }
 }
@@ -191,7 +184,7 @@ mod config_partition_tests {
             None,
             false,
         );
-        assert_eq!(config.queries.len(), 1);
+        assert_eq!(config.query.len(), 1);
         assert_eq!(
             config.needed_metadata_from_source,
             NeededMetadataFromSource::Count

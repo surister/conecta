@@ -13,23 +13,23 @@ fn create_partition_plan(
     connection_string: &str,
 
     // Partition Configuration.
-    queries: Vec<String>,
+    query: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 
     // Extra configuration.
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 ) -> PyResult<String> {
     let plan = _create_partition_plan(
         connection_string,
-        queries,
+        query,
         partition_on,
         partition_range,
         partition_num,
         max_pool_size,
-        disable_preallocation,
+        preallocation,
     );
 
     let json = serde_json::to_string(&plan).map_err(|e| {
@@ -46,14 +46,14 @@ pub fn read_sql(
     connection_string: &str,
 
     // Partition Configuration
-    queries: Vec<String>,
+    query: Vec<String>,
     partition_on: Option<String>,
     partition_range: Option<(i64, i64)>,
     partition_num: Option<u16>,
 
     // Extra configuration
     max_pool_size: Option<u32>,
-    disable_preallocation: bool,
+    preallocation: bool,
 
     // Return configuration
     return_backend: String,
@@ -63,13 +63,13 @@ pub fn read_sql(
     let (arrays, schema) = py.allow_threads(|| {
         conecta_core::read_sql(
             connection_string,
-            queries,
+            query,
             partition_on,
             partition_range,
             partition_num,
             // Extra configuration
             max_pool_size,
-            disable_preallocation,
+            preallocation,
         )
     });
 

@@ -3,7 +3,7 @@
 import dataclasses
 import json
 import re
-from typing import Literal, Optional, LiteralString
+from typing import Literal, Optional
 
 from .conecta import create_partition_plan as _create_partition_plan
 from .conecta import read_sql as _read_sql
@@ -125,13 +125,13 @@ class PartitionConfig:
          https://github.com/surister/conecta/blob/70af291199b1a794e00455816f01d925f5a8c040/conecta-core/src/metadata.rs#L17
         ...
     """
-    queries: list[str]
+    query: list[str]
     partition_on: Optional[str]
     partition_num: Optional[int]
     partition_range: tuple[int]
     needed_metadata_from_source: str
     query_partition_mode: str
-    disable_preallocation: bool
+    preallocation: bool
 
 
 @dataclasses.dataclass
@@ -178,20 +178,26 @@ def sum_as_string(a: int, b: int) -> str:
 
 def create_partition_plan(
         conn: str,
-        queries: list[str],
+        query: list[str] | str,
         partition_on: Optional[str] = None,
         partition_range: tuple = None,
-        partition_num: int = None
-):
+        partition_num: int = None,
+        **config
+) -> PartitionPlan:
+    if isinstance(query, str):
+        query = list(query)
+
+    pool_size = config.get('max_pool_size')
+    preallocation = config.get('preallocation')
     plan = json.loads( 
         _create_partition_plan(
             conn,
-            queries,
+            query,
             partition_on,
             partition_range,
             partition_num,
-            1,
-            False
+            pool_size if pool_size is not None else 1,
+            preallocation if preallocation is not None else True
         )
     )
     return PartitionPlan.from_dict(plan)
@@ -199,18 +205,21 @@ def create_partition_plan(
 
 def read_sql(
         conn: str,
-        queries: list[str],
+        query: list[str] | str,
         partition_on: Optional[str] = None,
-        partition_range: tuple = None,
-        partition_num: int = None,
+        partition_range: Optional[tuple] = None,
+        partition_num: Optional[int] = None,
         return_backend: Literal['pyarrow', 'arro3', 'nanoarrow'] = 'pyarrow',
-        extra_conf: dict = None
+        **extra_conf
 ):
-    extra_conf_options = {"max_pool_size", "disable_preallocation"}
+    if isinstance(query, str):
+        query = [query]
+
+    extra_conf_options = {"max_pool_size", "preallocation"}
 
     default_conf = {
         'max_pool_size': None,
-        'disable_preallocation': False
+        'preallocation': False
     }
 
     if extra_conf is None:
@@ -238,19 +247,19 @@ def read_sql(
             except ImportError as e:
                 raise ImportError(
                     f'Return backend {p!r} needs the package \'arro3-core\','
-                    f' you can fix this with `pip install pyarrow`') from e
+                    f' you can fix this with `pip install arro3-core`') from e
         case 'nanoarrow' as p:
             try:
-                import pyarrow as arrow
+                import nanoarrow as arrow
             except ImportError as e:
                 raise ImportError(
                     f'Return backend {p!r} needs the package \'nanoarrow\','
-                    f' you can fix this with `pip install pyarrow`') from e
+                    f' you can fix this with `pip install nanoarrow`') from e
         case _:
-            raise ValueError(f'Return backend not supported.')
+            raise ValueError(f'The specified return_backend {return_backend!r} is not supported.')
 
     return _read_sql(conn,
-                     queries=queries,
+                     query=query,
                      partition_on=partition_on,
                      partition_range=partition_range,
                      partition_num=partition_num,

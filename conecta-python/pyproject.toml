@@ -48,6 +48,7 @@ dev = [
     "polars>=1.31.0",
     "psycopg2>=2.9.10",
     "pyarrow>=21.0.0",
+    "pytest>=8.4.2",
     "sqlalchemy>=2.0.43",
     "testcontainers[postgres]>=4.13.1",
 ]

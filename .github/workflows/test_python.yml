@@ -38,3 +38,19 @@ jobs:
 
       - run: cargo test --lib --bins --tests --verbose
         working-directory: conecta-python
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+
+      - name: Copy README.md to conecta-python for maturin
+        run: |
+          cp README.md conecta-python/README.md
+
+      - name: Install dependencies
+        working-directory: conecta-python
+        run: uv sync --dev
+
+      - name: Run tests
+        working-directory: conecta-python
+        run: uv run pytest

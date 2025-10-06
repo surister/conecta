@@ -1,8 +1,7 @@
 name: Debug build
 
 on:
-  # allows to be called from other workflow
-  workflow_call:
+  workflow_dispatch:
 
 jobs:
   windows:

@@ -1,0 +1,37 @@
+name: Debug build
+
+on:
+  # allows to be called from other workflow
+  workflow_call:
+
+jobs:
+  windows:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v5
+      - name: Copy README.md to conecta-python for pypi
+        run: |
+          cp README.md conecta-python/README.md
+      - name: Set version
+        working-directory: conecta-python
+        shell: pwsh
+        run: |
+          $version = "${env:GITHUB_REF}" -replace '^refs/.*/v', ''
+          (Get-Content Cargo.toml) -replace '^version = ".*"', "version = `"$version`"" | Set-Content Cargo.toml
+          Get-Content Cargo.toml
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+          architecture: ${{ matrix.platform.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: conecta-python
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --find-interpreter
+          sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}

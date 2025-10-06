@@ -44,6 +44,7 @@ features = ["pyo3/extension-module"]
 dev = [
     "arro3-core>=0.5.1",
     "black>=25.1.0",
+    "connectorx>=0.4.4",
     "nanoarrow>=0.7.0",
     "polars>=1.31.0",
     "psycopg2>=2.9.10",

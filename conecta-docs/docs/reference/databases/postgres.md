@@ -59,11 +59,13 @@ In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
 These geospatial types are the native
 ones: https://www.postgresql.org/docs/current/datatype-geometric.html not PostGis.
 
-| Postgres type | Supported        | Native type                 | Arrow                      | Notes                                                                                          |
-|---------------|------------------|-----------------------------|----------------------------|------------------------------------------------------------------------------------------------|
-| `POINT`       | :material-check: | `geo::Point`                | ``DataType::List<f64, 2>`` | List with two components (x, y)                                                                |
-| `CIRCLE`      | :material-check: | `conecta::postgres::Circle` | ``DataType::List<f64, 3>`` | List with three components representing the center (Point{x, y}) and `r` and radius. (x, y, r) |
-| `LINE`        | :material-check: | `conecta::postgres::Line`   | ``DataType::List<f64, 3>`` | List with three components (a, b, c) from `a`x + `b`y + `c` = 0 linear equation                |
+| Postgres type | Supported        | Native type                 | Arrow                      | Notes                                                                                                                      |
+|---------------|------------------|-----------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `POINT`       | :material-check: | `geo::Point`                | ``DataType::List<f64, 2>`` | List with two components (x, y)                                                                                            |
+| `CIRCLE`      | :material-check: | `conecta::postgres::Circle` | ``DataType::List<f64, 3>`` | List with three components representing the center (Point{x, y}) and `r` and radius. (x, y, r)                             |
+| `LINE`        | :material-check: | `conecta::postgres::Line`   | ``DataType::List<f64, 3>`` | List with three components (a, b, c) from `a`x + `b`y + `c` = 0 linear equation                                            |
+| `BOX`         | :material-check: | `conecta::postgres::Box`    | ``DataType::List<f64, 4>`` | List with four components components, (x1, y1, x2, y2) where (x1, y1) and (x2, y2) are any two opposite corners of the box |
+| `LSEG`        | :material-check: | `conecta::postgres::Lseg`   | ``DataType::List<f64, 4>`` | List with four components components, (x1, y1, x2, y2) where (x1,y1) and (x2,y2) are the end points of the line segment.   |
 
 ### Array datatypes
 
@@ -76,7 +78,7 @@ ones: https://www.postgresql.org/docs/current/datatype-geometric.html not PostGi
 | `FLOAT8_ARRAY`       | :material-check: | `Vec<f64>`           | `DataType::List<f64>` |       |
 | `Array[TEXT]`        | :material-close: | `Vec<String>`        | `DataType::List`      |       |
 | `Array_UUID`         | :material-check: | `Vec<uuid::Uuid>`    | `DataType::List`      |       |
-| `Array[BOOL]`        | :material-close: | `Vec<bool>`          | `DataType::List`      |       |
+| `Array[BOOL]`        | :material-check: | `Vec<bool>`          | `DataType::List`      |       |
 | `Array[DATE]`        | :material-close: | `Vec<NaiveDate>`     | `DataType::List`      |       |
 | `Array[TIMESTAMP]`   | :material-close: | `Vec<NaiveDateTime>` | `DataType::List`      |       |
 | `Array[TIMESTAMPTZ]` | :material-close: | `Vec<DateTime<Utc>`  | `DataType::List`      |       |

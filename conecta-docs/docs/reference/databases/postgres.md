@@ -56,12 +56,14 @@ In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
 
 ### Geo-spatial datatypes
 
-These geospatial types are the native ones: https://www.postgresql.org/docs/current/datatype-geometric.html not PostGis.
+These geospatial types are the native
+ones: https://www.postgresql.org/docs/current/datatype-geometric.html not PostGis.
 
-| Postgres type | Supported        | Native type  | Arrow                      | Notes                                                                       |
-|---------------|------------------|--------------|----------------------------|-----------------------------------------------------------------------------|
-| `POINT`       | :material-check: | `geo::Point` | ``DataType::List<f64, 2>`` | List with two coordinates (x, y)                                            |
-| `CIRCLE`      | :material-check: | `geo::Point` | ``DataType::List<f64, 3>`` | List with two coordinates representing the center and `r`, radius (x, y, r) |
+| Postgres type | Supported        | Native type                 | Arrow                      | Notes                                                                                          |
+|---------------|------------------|-----------------------------|----------------------------|------------------------------------------------------------------------------------------------|
+| `POINT`       | :material-check: | `geo::Point`                | ``DataType::List<f64, 2>`` | List with two components (x, y)                                                                |
+| `CIRCLE`      | :material-check: | `conecta::postgres::Circle` | ``DataType::List<f64, 3>`` | List with three components representing the center (Point{x, y}) and `r` and radius. (x, y, r) |
+| `LINE`        | :material-check: | `conecta::postgres::Line`   | ``DataType::List<f64, 3>`` | List with three components (a, b, c) from `a`x + `b`y + `c` = 0 linear equation                |
 
 ### Array datatypes
 

@@ -32,5 +32,6 @@ select id,
         line_,
         box_,
         lseg_,
-        path_
+        path_,
+        polygon_
 from pg_datatypes

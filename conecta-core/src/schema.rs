@@ -101,9 +101,7 @@ impl NativeType {
             NativeType::Circle => {
                 DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
             }
-            NativeType::Line => {
-                DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
-            }
+            NativeType::Line => DataType::List(Arc::new(Field::new("_", DataType::Float64, true))),
             NativeType::VecString => {
                 DataType::List(Arc::new(Field::new("_", DataType::Utf8, true)))
             }

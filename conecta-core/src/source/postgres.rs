@@ -57,7 +57,7 @@ impl Line {
     }
 
     /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
-    /// this values will never be None.
+    /// these values will never be None.
     fn to_vec_opt(&self) -> [Option<f64>; 3] {
         [Some(self.a), Some(self.b), Some(self.c)]
     }
@@ -98,9 +98,47 @@ impl Circle {
     }
 
     /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
-    /// this values will never be None.
+    /// these values will never be None.
     fn to_vec_opt(&self) -> [Option<f64>; 3] {
         [Some(self.x), Some(self.y), Some(self.r)]
+    }
+}
+
+/// Represents a Box where (x1,y1) and (x2,y2) are any two opposite corners of the box.
+#[derive(Debug)]
+struct Boxx {
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+}
+impl FromSql<'_> for Boxx {
+    fn from_sql<'a>(
+        ty: &Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let x1 = f64::from_be_bytes(raw[0..8].try_into().unwrap());
+        let y1 = f64::from_be_bytes(raw[8..16].try_into().unwrap());
+        let x2 = f64::from_be_bytes(raw[16..24].try_into().unwrap());
+        let y2 = f64::from_be_bytes(raw[24..32].try_into().unwrap());
+        Ok(Self { x1, y1, x2, y2 })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty == &Type::BOX
+    }
+}
+
+impl Boxx {
+    /// Returns a vector where (x1 ,y1, x2, y2) are any two opposite corners of the box.
+    fn to_vec(&self) -> [f64; 4] {
+        [self.x1, self.y1, self.x2, self.y2]
+    }
+
+    /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
+    /// these values will never be None.
+    fn to_vec_opt(&self) -> [Option<f64>; 4] {
+        [Some(self.x1), Some(self.y1), Some(self.x2), Some(self.y2)]
     }
 }
 
@@ -243,6 +281,9 @@ impl Source for PostgresSource {
                                 v.to_vec_opt().into_iter()
                             },
                             NativeType::Circle => ListBuilder<Float64Builder>, Circle, |v: Circle|{
+                                v.to_vec_opt().into_iter()
+                            },
+                            NativeType::Box => ListBuilder<Float64Builder>, Boxx, |v: Boxx|{
                                 v.to_vec_opt().into_iter()
                             },
                         });
@@ -435,6 +476,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::POINT => NativeType::BidimensionalPoint,
         Type::LINE => NativeType::Line,
         Type::CIRCLE => NativeType::Circle,
+        Type::BOX => NativeType::Box,
 
         _ => panic!("type {ty} is not implemented for Postgres"),
     }

@@ -27,6 +27,7 @@ create table pg_datatypes
     point_            point,
     circle_           circle,
     line_             line,
+    box_              box,
 
     int_array         integer[],
     text_array        text[],

@@ -53,6 +53,8 @@ pub enum NativeType {
 
     // Geo
     BidimensionalPoint,
+    Circle
+
 }
 
 impl NativeType {
@@ -94,6 +96,9 @@ impl NativeType {
                 DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
             }
             NativeType::BidimensionalPoint => {
+                DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
+            }
+            NativeType::Circle => {
                 DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
             }
             NativeType::VecString => {

@@ -10,13 +10,13 @@ log = "0.4.28"
 arrow = { version = "56.2.0", features = ["prettyprint", "ffi"] }
 
 r2d2_postgres = "0.18.2"
-postgres = { version = "0.19", features = ["with-chrono-0_4", "with-uuid-1"] }
+postgres = { version = "0.19", features = ["with-chrono-0_4", "with-uuid-1", "with-geo-types-0_7"] }
 sqlparser = "0.59.0"
 rayon = "1.11.0"
 chrono = "0.4.42"
 
 serde = { version = "1.0.228", features = ["derive"] }
 uuid = "1.18.1"
-
+geo-types = "0.7.17"
 [dev-dependencies]
 flamegraph = "0.6.9"

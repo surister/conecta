@@ -56,9 +56,12 @@ In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
 
 ### Geo-spatial datatypes
 
-| Postgres type | Supported        | Native type  | Arrow | Notes |
-|---------------|------------------|--------------|-------|-------|
-| `POINT`       | :material-close: | `geo::Point` |       |       |
+These geospatial types are the native ones: https://www.postgresql.org/docs/current/datatype-geometric.html not PostGis.
+
+| Postgres type | Supported        | Native type  | Arrow                      | Notes                                                                       |
+|---------------|------------------|--------------|----------------------------|-----------------------------------------------------------------------------|
+| `POINT`       | :material-check: | `geo::Point` | ``DataType::List<f64, 2>`` | List with two coordinates (x, y)                                            |
+| `CIRCLE`      | :material-check: | `geo::Point` | ``DataType::List<f64, 3>`` | List with two coordinates representing the center and `r`, radius (x, y, r) |
 
 ### Array datatypes
 

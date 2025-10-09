@@ -24,7 +24,11 @@ select id,
        double_array,
        text_array,
        uuid_array,
-       bool_array
+       bool_array,
+
+        --geo
+        point_,
+        circle_
 
 -- Geo
 -- point_

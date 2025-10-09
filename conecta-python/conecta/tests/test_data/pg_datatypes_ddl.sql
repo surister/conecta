@@ -29,6 +29,7 @@ create table pg_datatypes
     line_             line,
     box_              box,
     lseg_             lseg,
+    path_             path,
 
     int_array         integer[],
     text_array        text[],

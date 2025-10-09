@@ -37,6 +37,10 @@ pub fn get_arrow_builders(schema: &Schema, capacity: usize) -> Vec<Box<dyn Array
                 Float64Builder::new(),
                 3,
             ))),
+            NativeType::Box => builders.push(Box::new(ListBuilder::with_capacity(
+                Float64Builder::new(),
+                4,
+            ))),
             _ => builders.push(make_builder(&column.data_type.to_arrow(), capacity)),
         }
     }

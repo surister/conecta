@@ -29,5 +29,6 @@ select id,
         --geo
         point_,
         circle_,
-        line_
+        line_,
+        box_
 from pg_datatypes

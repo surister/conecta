@@ -56,16 +56,18 @@ In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
 
 ### Geo-spatial datatypes
 
-These geospatial types are the native
-ones: https://www.postgresql.org/docs/current/datatype-geometric.html not PostGis.
+These geospatial types are the
+native [ones](https://www.postgresql.org/docs/current/datatype-geometric.html)
+not PostGis'.
 
-| Postgres type | Supported        | Native type                 | Arrow                      | Notes                                                                                                                      |
-|---------------|------------------|-----------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| `POINT`       | :material-check: | `geo::Point`                | ``DataType::List<f64, 2>`` | List with two components (x, y)                                                                                            |
-| `CIRCLE`      | :material-check: | `conecta::postgres::Circle` | ``DataType::List<f64, 3>`` | List with three components representing the center (Point{x, y}) and `r` and radius. (x, y, r)                             |
-| `LINE`        | :material-check: | `conecta::postgres::Line`   | ``DataType::List<f64, 3>`` | List with three components (a, b, c) from `a`x + `b`y + `c` = 0 linear equation                                            |
-| `BOX`         | :material-check: | `conecta::postgres::Box`    | ``DataType::List<f64, 4>`` | List with four components components, (x1, y1, x2, y2) where (x1, y1) and (x2, y2) are any two opposite corners of the box |
-| `LSEG`        | :material-check: | `conecta::postgres::Lseg`   | ``DataType::List<f64, 4>`` | List with four components components, (x1, y1, x2, y2) where (x1,y1) and (x2,y2) are the end points of the line segment.   |
+| Postgres type | Supported        | Native type                 | Arrow            | Notes                                                                                                                                                                           |
+|---------------|------------------|-----------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `POINT`       | :material-check: | `geo::Point`                | ``list<double>`` | List with two  (x, y)                                                                                                                                                           |
+| `CIRCLE`      | :material-check: | `conecta::postgres::Circle` | ``list<double>`` | List with three  representing the center (Point{x, y}) and `r` and radius. (x, y, r)                                                                                            |
+| `LINE`        | :material-check: | `conecta::postgres::Line`   | ``list<double>`` | List with three  (a, b, c) from `a`x + `b`y + `c` = 0 linear equation                                                                                                           |
+| `BOX`         | :material-check: | `conecta::postgres::Box`    | ``list<double>`` | List with four  elements, (x1, y1, x2, y2) where (x1, y1) and (x2, y2) are any two opposite corners of the box                                                                  |
+| `LSEG`        | :material-check: | `conecta::postgres::Lseg`   | ``list<double>`` | List with four  elements, (x1, y1, x2, y2) where (x1,y1) and (x2,y2) are the end points of the line segment.                                                                    |
+| `PATH`        | :material-check: | `conecta::postgres::Path`   | ``list<double>`` | List with minimum of two elements, (o, c, x1, y1, x2, y2...) where `o` is whether the path is open or not, `c` is the total count of points and the rest are points components. |
 
 ### Array datatypes
 

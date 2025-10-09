@@ -181,6 +181,63 @@ impl LineSegment {
     }
 }
 
+/// Represents a path that can be open or closed. A path is can have `i32::MAX` points.
+/// points is a vector where coordinates are grouped in points: ``[x1, y1, x2, y2, x3, y3...]`
+#[derive(Debug)]
+struct Path {
+    is_open: bool,
+    point_count: i32,
+    points: Vec<f64>,
+}
+impl FromSql<'_> for Path {
+    fn from_sql<'a>(
+        ty: &Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        // 0 byte is whether the path is open or not
+        // 1-5 byte is int32 of points count
+        // 5.. bytes are the points
+        let is_open = raw[0].count_ones() == 1;
+        let point_count = i32::from_be_bytes(raw[1..5].try_into().unwrap());
+        let points: Vec<f64> = raw[5..]
+            .chunks_exact(8)
+            .map(|chunk| f64::from_be_bytes(chunk.try_into().unwrap()))
+            .collect();
+        Ok(Self {
+            is_open,
+            point_count,
+            points,
+        })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty == &Type::PATH
+    }
+}
+
+impl Path {
+    /// Returns a vector where `o` is whether the path is open or net, `c` the total count of
+    /// points and x1, y1, x2, y2, x3, y3... are the points.
+    /// (o, c, x1, y1, x2, y2...)
+    fn to_vec(self) -> Vec<f64> {
+        let mut out = Vec::with_capacity((self.point_count + 2) as usize);
+        out.push(if self.is_open { 1.0 } else { 0.0 });
+        out.push(self.point_count as f64);
+        out.extend(self.points);
+        out
+    }
+
+    /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
+    /// this values will never be None.
+    fn to_vec_opt(&self) -> Vec<Option<f64>> {
+        let mut out = Vec::with_capacity(2 + self.points.len());
+        out.push(Some(if self.is_open { 1.0 } else { 0.0 }));
+        out.push(Some(self.point_count as f64));
+        out.extend(self.points.iter().map(|&v| Some(v)));
+        out
+    }
+}
+
 #[derive(Debug)]
 pub struct PostgresSource {
     pub pool: Pool<PostgresConnectionManager<NoTls>>,
@@ -296,7 +353,7 @@ impl Source for PostgresSource {
                                 (v.nanosecond() as i64) / 1_000
                             },
                             NativeType::Date32 => Date32Builder, NaiveDate, |v: NaiveDate|{
-                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).expect("this_shouldnt_fail");
+                                let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
                                 (v - epoch).num_days() as i32
                             },
                             NativeType::TimestampWithoutTimeZone => TimestampMicrosecondBuilder, NaiveDateTime, | v: NaiveDateTime | {
@@ -316,18 +373,11 @@ impl Source for PostgresSource {
                             NativeType::BidimensionalPoint => ListBuilder<Float64Builder>, geo_types::Point, |v: geo_types::Point|{
                                 [Some(v.x()), Some(v.y())].into_iter()
                             },
-                            NativeType::Line => ListBuilder<Float64Builder>, Line, |v: Line|{
-                                v.to_vec_opt().into_iter()
-                            },
-                            NativeType::Circle => ListBuilder<Float64Builder>, Circle, |v: Circle|{
-                                v.to_vec_opt().into_iter()
-                            },
-                            NativeType::Box => ListBuilder<Float64Builder>, Boxx, |v: Boxx|{
-                                v.to_vec_opt().into_iter()
-                            },
-                              NativeType::LineSegment => ListBuilder<Float64Builder>, LineSegment, |v: LineSegment|{
-                                v.to_vec_opt().into_iter()
-                            },
+                            NativeType::Line => ListBuilder<Float64Builder>, Line, |v: Line|v.to_vec_opt().into_iter(),
+                            NativeType::Circle => ListBuilder<Float64Builder>, Circle, |v: Circle|v.to_vec_opt().into_iter(),
+                            NativeType::Box => ListBuilder<Float64Builder>, Boxx, |v: Boxx|v.to_vec_opt().into_iter(),
+                            NativeType::LineSegment => ListBuilder<Float64Builder>, LineSegment, |v: LineSegment|v.to_vec_opt().into_iter(),
+                            NativeType::Path => ListBuilder<Float64Builder>, Path, |v: Path|v.to_vec_opt().into_iter(),
                         });
 
                         // VecUUID is not above because it follows a different API due to FixedSizeBinaryBuilder.
@@ -515,11 +565,14 @@ fn to_native_ty(ty: Type) -> NativeType {
 
         Type::FLOAT4_ARRAY => NativeType::VecF32,
         Type::FLOAT8_ARRAY => NativeType::VecF64,
+
+        // Geo
         Type::POINT => NativeType::BidimensionalPoint,
         Type::LINE => NativeType::Line,
         Type::CIRCLE => NativeType::Circle,
         Type::BOX => NativeType::Box,
         Type::LSEG => NativeType::LineSegment,
+        Type::PATH => NativeType::Path,
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

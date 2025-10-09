@@ -31,5 +31,6 @@ select id,
         circle_,
         line_,
         box_,
-        lseg_
+        lseg_,
+        path_
 from pg_datatypes

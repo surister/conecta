@@ -57,6 +57,7 @@ pub enum NativeType {
     Circle,
     Box,
     LineSegment,
+    Path,
 }
 
 impl NativeType {
@@ -107,12 +108,12 @@ impl NativeType {
             NativeType::LineSegment => {
                 DataType::List(Arc::new(Field::new("_", DataType::Float64, true)))
             }
+            NativeType::Path => DataType::List(Arc::new(Field::new("_", DataType::Float64, true))),
             NativeType::Box => DataType::List(Arc::new(Field::new("_", DataType::Float64, true))),
             NativeType::VecString => {
                 DataType::List(Arc::new(Field::new("_", DataType::Utf8, true)))
             }
-            NativeType::VecUUID => DataType::List(Arc::new(Field::new(
-                "_",
+            NativeType::VecUUID => DataType::List(Arc::new(Field::new("_",
                 DataType::FixedSizeBinary(16),
                 true,
             ))),

@@ -30,6 +30,7 @@ create table pg_datatypes
     box_              box,
     lseg_             lseg,
     path_             path,
+    polygon_          polygon,
 
     int_array         integer[],
     text_array        text[],

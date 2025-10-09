@@ -182,7 +182,7 @@ impl LineSegment {
 }
 
 /// Represents a path that can be open or closed. A path is can have `i32::MAX` points.
-/// points is a vector where coordinates are grouped in points: ``[x1, y1, x2, y2, x3, y3...]`
+/// points is a vector where coordinates are grouped in points: ``[x1, y1, x2, y2, xn, yn...]`
 #[derive(Debug)]
 struct Path {
     is_open: bool,
@@ -217,8 +217,8 @@ impl FromSql<'_> for Path {
 
 impl Path {
     /// Returns a vector where `o` is whether the path is open or net, `c` the total count of
-    /// points and x1, y1, x2, y2, x3, y3... are the points.
-    /// (o, c, x1, y1, x2, y2...)
+    /// points and x1, y1, x2, y2, xn, yn... are the points.
+    /// (o, c, x1, y1,... xn, yn)
     fn to_vec(self) -> Vec<f64> {
         let mut out = Vec::with_capacity((self.point_count + 2) as usize);
         out.push(if self.is_open { 1.0 } else { 0.0 });
@@ -235,6 +235,41 @@ impl Path {
         out.push(Some(self.point_count as f64));
         out.extend(self.points.iter().map(|&v| Some(v)));
         out
+    }
+}
+
+/// Represents a Polygon represented by a list of coordinates, [x1, y1, x2, y2...xn, yn]
+#[derive(Debug)]
+struct Polygon {
+    points: Vec<f64>,
+}
+impl FromSql<'_> for Polygon {
+    fn from_sql<'a>(
+        ty: &Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let points: Vec<f64> = raw
+            .chunks_exact(8)
+            .map(|chunk| f64::from_be_bytes(chunk.try_into().unwrap()))
+            .collect();
+        Ok(Self { points })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty == &Type::POLYGON
+    }
+}
+
+impl Polygon {
+    /// Returns a vector of coordinates [x1, y1, x2, y2, ...xn, yn]
+    fn to_vec(self) -> Vec<f64> {
+        self.points
+    }
+
+    /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
+    /// this values will never be None.
+    fn to_vec_opt(&self) -> Vec<Option<f64>> {
+        self.points.iter().map(|&v| Some(v)).collect()
     }
 }
 
@@ -378,6 +413,7 @@ impl Source for PostgresSource {
                             NativeType::Box => ListBuilder<Float64Builder>, Boxx, |v: Boxx|v.to_vec_opt().into_iter(),
                             NativeType::LineSegment => ListBuilder<Float64Builder>, LineSegment, |v: LineSegment|v.to_vec_opt().into_iter(),
                             NativeType::Path => ListBuilder<Float64Builder>, Path, |v: Path|v.to_vec_opt().into_iter(),
+                            NativeType::Polygon => ListBuilder<Float64Builder>, Polygon, |v: Polygon|v.to_vec_opt().into_iter(),
                         });
 
                         // VecUUID is not above because it follows a different API due to FixedSizeBinaryBuilder.
@@ -573,6 +609,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::BOX => NativeType::Box,
         Type::LSEG => NativeType::LineSegment,
         Type::PATH => NativeType::Path,
+        Type::POLYGON => NativeType::Polygon,
         _ => panic!("type {ty} is not implemented for Postgres"),
     }
 }

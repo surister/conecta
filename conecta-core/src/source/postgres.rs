@@ -8,8 +8,8 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use log::debug;
 
 use postgres::fallible_iterator::FallibleIterator;
-use postgres::types::Type;
-use postgres::{Error, NoTls, RowIter};
+use postgres::types::{FromSql, Type};
+use postgres::{NoTls, RowIter};
 
 use r2d2_postgres::postgres;
 use r2d2_postgres::r2d2::{Pool, PooledConnection};
@@ -24,6 +24,47 @@ use sqlparser::ast::{Statement, TableFactor};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use uuid::Uuid;
+
+/// Represents a Circle, it implements FromSql to deserialize Postgres type `circle`
+#[derive(Debug)]
+struct Circle {
+    /// x component of the center
+    x: f64,
+    /// y component of the center
+    y: f64,
+    /// radius length
+    r: f64,
+}
+impl FromSql<'_> for Circle {
+    fn from_sql<'a>(ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let x = f64::from_be_bytes(raw[0..8].try_into().unwrap());
+        let y = f64::from_be_bytes(raw[8..16].try_into().unwrap());
+        let r = f64::from_be_bytes(raw[16..24].try_into().unwrap());
+
+        Ok(Self { x, y, r })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        match ty {
+            &Type::CIRCLE => true,
+            _ => false
+        }
+    }
+}
+
+impl Circle {
+    /// Returns a vector where the first two components are the center's Point (x, y) and the
+    /// third component is the radius length.
+    fn to_vec(&self) -> [f64; 3] {
+        [self.x, self.y, self.r]
+    }
+
+    /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
+    /// this values will never be None.
+    fn to_vec_opt(&self) -> [Option<f64>; 3] {
+        [Some(self.x), Some(self.y), Some(self.r)]
+    }
+}
 
 #[derive(Debug)]
 pub struct PostgresSource {
@@ -157,6 +198,12 @@ impl Source for PostgresSource {
                             NativeType::VecF64 => ListBuilder<Float64Builder>, Vec<Option<f64>>, | v | v,
                             NativeType::VecString => ListBuilder<StringBuilder>, Vec<Option<String>>, | v | v,
                             NativeType::VecBool => ListBuilder<BooleanBuilder>, Vec<Option<bool>>, | v | v,
+                            NativeType::BidimensionalPoint => ListBuilder<Float64Builder>, geo_types::Point, |v: geo_types::Point|{
+                                [Some(v.x()), Some(v.y())].into_iter()
+                            },
+                            NativeType::Circle => ListBuilder<Float64Builder>, Circle, |v: Circle|{
+                                v.to_vec_opt().into_iter()
+                            },
                         });
 
                         // VecUUID is not above because it follows a different API due to FixedSizeBinaryBuilder.
@@ -344,6 +391,8 @@ fn to_native_ty(ty: Type) -> NativeType {
 
         Type::FLOAT4_ARRAY => NativeType::VecF32,
         Type::FLOAT8_ARRAY => NativeType::VecF64,
+        Type::POINT => NativeType::BidimensionalPoint,
+        Type::CIRCLE => NativeType::Circle,
 
         _ => panic!("type {ty} is not implemented for Postgres"),
     }

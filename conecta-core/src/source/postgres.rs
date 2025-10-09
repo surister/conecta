@@ -25,6 +25,44 @@ use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::parser::Parser;
 use uuid::Uuid;
 
+/// Represents a Line, it implements FromSql to deserialize Postgres type `LINE`
+/// A Line is represented by the linear equation ax + by + c = 0 where a and b are > 0.
+#[derive(Debug)]
+struct Line {
+    a: f64,
+    b: f64,
+    c: f64,
+}
+impl FromSql<'_> for Line {
+    fn from_sql<'a>(
+        ty: &Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+        let a = f64::from_be_bytes(raw[0..8].try_into().unwrap());
+        let b = f64::from_be_bytes(raw[8..16].try_into().unwrap());
+        let c = f64::from_be_bytes(raw[16..24].try_into().unwrap());
+
+        Ok(Self { a, b, c })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty == &Type::LINE
+    }
+}
+
+impl Line {
+    /// Returns a vector where the components are [a, b, c] of ax + by + c = 0
+    fn to_vec(&self) -> [f64; 3] {
+        [self.a, self.b, self.c]
+    }
+
+    /// Same as `to_vec` but values are Option<f64>, this is just to satisfy arrow API, in reality
+    /// this values will never be None.
+    fn to_vec_opt(&self) -> [Option<f64>; 3] {
+        [Some(self.a), Some(self.b), Some(self.c)]
+    }
+}
+
 /// Represents a Circle, it implements FromSql to deserialize Postgres type `circle`
 #[derive(Debug)]
 struct Circle {
@@ -48,10 +86,7 @@ impl FromSql<'_> for Circle {
     }
 
     fn accepts(ty: &Type) -> bool {
-        match ty {
-            &Type::CIRCLE => true,
-            _ => false,
-        }
+        ty == &Type::CIRCLE
     }
 }
 
@@ -203,6 +238,9 @@ impl Source for PostgresSource {
                             NativeType::VecBool => ListBuilder<BooleanBuilder>, Vec<Option<bool>>, | v | v,
                             NativeType::BidimensionalPoint => ListBuilder<Float64Builder>, geo_types::Point, |v: geo_types::Point|{
                                 [Some(v.x()), Some(v.y())].into_iter()
+                            },
+                            NativeType::Line => ListBuilder<Float64Builder>, Line, |v: Line|{
+                                v.to_vec_opt().into_iter()
                             },
                             NativeType::Circle => ListBuilder<Float64Builder>, Circle, |v: Circle|{
                                 v.to_vec_opt().into_iter()
@@ -395,6 +433,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::FLOAT4_ARRAY => NativeType::VecF32,
         Type::FLOAT8_ARRAY => NativeType::VecF64,
         Type::POINT => NativeType::BidimensionalPoint,
+        Type::LINE => NativeType::Line,
         Type::CIRCLE => NativeType::Circle,
 
         _ => panic!("type {ty} is not implemented for Postgres"),

@@ -23,8 +23,11 @@ create table pg_datatypes
     jsonb_            jsonb,
     uuid_             uuid,
     bytea_            bytea,
+    -- geo
     point_            point,
     circle_           circle,
+    line_             line,
+
     int_array         integer[],
     text_array        text[],
     smallint_array    smallint[],

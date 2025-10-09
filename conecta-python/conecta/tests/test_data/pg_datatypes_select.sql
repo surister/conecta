@@ -28,8 +28,6 @@ select id,
 
         --geo
         point_,
-        circle_
-
--- Geo
--- point_
+        circle_,
+        line_
 from pg_datatypes

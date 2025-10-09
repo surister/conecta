@@ -53,8 +53,7 @@ pub enum NativeType {
 
     // Geo
     BidimensionalPoint,
-    Circle
-
+    Circle,
 }
 
 impl NativeType {

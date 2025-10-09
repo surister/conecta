@@ -36,7 +36,10 @@ struct Circle {
     r: f64,
 }
 impl FromSql<'_> for Circle {
-    fn from_sql<'a>(ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
+    fn from_sql<'a>(
+        ty: &Type,
+        raw: &'a [u8],
+    ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         let x = f64::from_be_bytes(raw[0..8].try_into().unwrap());
         let y = f64::from_be_bytes(raw[8..16].try_into().unwrap());
         let r = f64::from_be_bytes(raw[16..24].try_into().unwrap());
@@ -47,7 +50,7 @@ impl FromSql<'_> for Circle {
     fn accepts(ty: &Type) -> bool {
         match ty {
             &Type::CIRCLE => true,
-            _ => false
+            _ => false,
         }
     }
 }

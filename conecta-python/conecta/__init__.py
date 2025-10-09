@@ -164,18 +164,6 @@ class PartitionPlan:
         partition_config = d.pop('partition_config')
         return cls(**d, partition_config=PartitionConfig(**partition_config))
 
-
-def sum_as_string(a: int, b: int) -> str:
-    """
-    Python docstring go here.
-
-    :param a:
-    :param b:
-    :return:
-    """
-    return _sum_as_string(a, b)
-
-
 def create_partition_plan(
         conn: str,
         query: list[str] | str,

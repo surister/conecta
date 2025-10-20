@@ -25,6 +25,7 @@ select id,
        text_array,
        uuid_array,
        bool_array,
+       bytea_array,
 
        --geo
        point_,

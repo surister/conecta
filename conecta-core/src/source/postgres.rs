@@ -398,7 +398,7 @@ impl Source for PostgresSource {
                             NativeType::Bytes => BinaryBuilder, &[u8], | v | v,
                             NativeType::UUID => FixedSizeBinaryBuilder, Uuid, | v | v,
 
-                            // Vectors
+                            // Arrays
                             NativeType::VecI16 => ListBuilder<Int16Builder>, Vec<Option<i16>>, | v | v,
                             NativeType::VecI32 => ListBuilder<Int32Builder>, Vec<Option<i32>>, | v | v,
                             NativeType::VecI64 => ListBuilder<Int64Builder>, Vec<Option<i64>>, | v | v,
@@ -406,6 +406,9 @@ impl Source for PostgresSource {
                             NativeType::VecF64 => ListBuilder<Float64Builder>, Vec<Option<f64>>, | v | v,
                             NativeType::VecString => ListBuilder<StringBuilder>, Vec<Option<String>>, | v | v,
                             NativeType::VecBool => ListBuilder<BooleanBuilder>, Vec<Option<bool>>, | v | v,
+                            NativeType::VecByte => ListBuilder<BinaryBuilder>, Vec<Option<&[u8]>>, | v | v,
+                            
+                            // Geo
                             NativeType::BidimensionalPoint => ListBuilder<Float64Builder>, geo_types::Point, |v: geo_types::Point|{
                                 [Some(v.x()), Some(v.y())].into_iter()
                             },
@@ -595,6 +598,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         // Arrays
         Type::UUID_ARRAY => NativeType::VecUUID,
         Type::TEXT_ARRAY => NativeType::VecString,
+        Type::BYTEA_ARRAY => NativeType::VecByte,
         Type::BOOL_ARRAY => NativeType::VecBool,
 
         Type::INT2_ARRAY => NativeType::VecI16,

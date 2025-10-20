@@ -100,4 +100,4 @@ Unsupported architectures:
 [Repository]: https://github.com/surister/conecta/
 [License]: https://github.com/surister/conecta/blob/master/LICENSE.md
 
-[postgres_docs]: https://conecta.surister.dev/databases/postgres/
+[postgres_docs]: https://conecta.surister.dev/reference/databases/postgres/

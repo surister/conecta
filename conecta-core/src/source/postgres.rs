@@ -407,7 +407,7 @@ impl Source for PostgresSource {
                             NativeType::VecString => ListBuilder<StringBuilder>, Vec<Option<String>>, | v | v,
                             NativeType::VecBool => ListBuilder<BooleanBuilder>, Vec<Option<bool>>, | v | v,
                             NativeType::VecByte => ListBuilder<BinaryBuilder>, Vec<Option<&[u8]>>, | v | v,
-                            
+
                             // Geo
                             NativeType::BidimensionalPoint => ListBuilder<Float64Builder>, geo_types::Point, |v: geo_types::Point|{
                                 [Some(v.x()), Some(v.y())].into_iter()

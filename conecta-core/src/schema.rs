@@ -120,11 +120,9 @@ impl NativeType {
             NativeType::VecString => {
                 DataType::List(Arc::new(Field::new("_", DataType::Utf8, true)))
             }
-            NativeType::VecByte => DataType::List(Arc::new(Field::new(
-                "_",
-                DataType::Binary,
-                true,
-            ))),
+            NativeType::VecByte => {
+                DataType::List(Arc::new(Field::new("_", DataType::Binary, true)))
+            }
             NativeType::VecUUID => DataType::List(Arc::new(Field::new(
                 "_",
                 DataType::FixedSizeBinary(16),

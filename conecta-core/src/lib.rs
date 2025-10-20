@@ -3,6 +3,9 @@ use std::sync::Arc;
 use postgres::NoTls;
 use r2d2_postgres::r2d2::Pool;
 use r2d2_postgres::PostgresConnectionManager;
+use std::iter::Map;
+use std::sync::Arc;
+use std::vec::IntoIter;
 
 pub mod destination;
 pub mod metadata;
@@ -16,15 +19,77 @@ use crate::partition::PartitionConfig;
 use crate::perf_logger::{perf_checkpoint, perf_start};
 use crate::source::{get_source, Source, SourceType};
 
-use arrow::array::ArrayRef;
-use arrow::datatypes::{Field, Schema, SchemaRef};
+use arrow::array::{ArrayRef, StructArray};
+use arrow::datatypes::{Field, FieldRef, Schema, SchemaRef};
+use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 
 use crate::source::postgres::PostgresSource;
 use log::debug;
 
-pub fn test_from_core() -> i32 {
-    3
+/// Trait for types that can read `ArrayRef`'s.
+///
+/// To create from an iterator, see [ArrayIterator].
+pub trait ArrayReader: Iterator<Item = Result<ArrayRef, ArrowError>> {
+    /// Returns the field of this `ArrayReader`.
+    ///
+    /// Implementation of this trait should guarantee that all `ArrayRef`'s returned by this
+    /// reader should have the same field as returned from this method.
+    fn field(&self) -> FieldRef;
+}
+
+impl<R: ArrayReader + ?Sized> ArrayReader for Box<R> {
+    fn field(&self) -> FieldRef {
+        self.as_ref().field()
+    }
+}
+
+/// An iterator of [`ArrayRef`] with an attached [`FieldRef`]
+pub struct ArrayIterator<I>
+where
+    I: IntoIterator<Item = Result<ArrayRef, ArrowError>>,
+{
+    inner: I::IntoIter,
+    inner_field: FieldRef,
+}
+
+impl<I> ArrayIterator<I>
+where
+    I: IntoIterator<Item = Result<ArrayRef, ArrowError>>,
+{
+    /// Create a new [ArrayIterator].
+    ///
+    /// If `iter` is an infallible iterator, use `.map(Ok)`.
+    pub fn new(iter: I, field: FieldRef) -> Self {
+        Self {
+            inner: iter.into_iter(),
+            inner_field: field,
+        }
+    }
+}
+
+impl<I> Iterator for ArrayIterator<I>
+where
+    I: IntoIterator<Item = Result<ArrayRef, ArrowError>>,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<I> ArrayReader for ArrayIterator<I>
+where
+    I: IntoIterator<Item = Result<ArrayRef, ArrowError>>,
+{
+    fn field(&self) -> FieldRef {
+        self.inner_field.clone()
+    }
 }
 
 /// Given a vector `Vec<T>` where `T` is `Vec<ArrayRef>` representing a chunk of the same table
@@ -49,6 +114,26 @@ pub fn make_record_batch(arrays: Vec<ArrayRef>, col_names: Vec<String>) -> Recor
     let schema = Arc::new(Schema::new(fields));
     RecordBatch::try_new(SchemaRef::from(schema.clone()), arrays)
         .expect("Failed to create RecordBatch")
+}
+
+pub fn to_something(
+    schema: SchemaRef,
+    batches: Vec<RecordBatch>,
+) -> Box<dyn ArrayReader + Send> {
+    let fields = schema.fields();
+    let iter = Box::new(batches.into_iter().map(|batch| {
+        let arr: ArrayRef = Arc::new(StructArray::from(batch));
+        Ok(arr)
+    }));
+
+    Box::new(
+        ArrayIterator::new(
+            iter,
+            Field::new_struct("", fields.clone(), false)
+                .with_metadata(schema.metadata.clone())
+                .into(),
+        )
+    )
 }
 
 /// Wrapper to get a partition plan, so other libraries (conecta-python) can create a partition

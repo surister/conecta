@@ -4,8 +4,8 @@ use std::sync::Arc;
 use pyo3::prelude::*;
 use pyo3_arrow::error::PyArrowResult;
 use pyo3_arrow::PyTable;
-
-use conecta_core::{_create_partition_plan, make_record_batches};
+use pyo3_arrow::ffi::{to_stream_pycapsule, ArrayIterator};
+use conecta_core::{_create_partition_plan, make_record_batches, to_something};
 
 #[pyfunction]
 fn create_partition_plan(
@@ -38,6 +38,8 @@ fn create_partition_plan(
 
     Ok(json)
 }
+
+
 
 #[pyfunction]
 pub fn read_sql(
@@ -93,12 +95,17 @@ pub fn read_sql(
         );
     }
 
-    let table = PyTable::try_new(rbs, Arc::new(schema.to_arrow()));
+    let table = PyTable::try_new(rbs.clone(), Arc::new(schema.clone().to_arrow()));
 
     match return_backend.as_str() {
         "arro3" => Ok(table?.to_arro3(py)?.into()),
         "nanoarrow" => Ok(table?.to_nanoarrow(py)?.into()),
         // We default to pyarrow, its also default on conecta-python
+        "pycapculse" => {
+            let t = to_something(Arc::new(schema.to_arrow()), rbs);
+            to_stream_pycapsule(py, t, None)?.into()
+
+        },
         _ => Ok(table?.to_pyarrow(py)?.into()),
     }
 }

@@ -1,8 +1,8 @@
 use crate::schema::{NativeType, Schema};
 use arrow::array::{
-    make_builder, ArrayBuilder, BooleanBuilder, FixedSizeBinaryBuilder, Float32Builder,
-    Float64Builder, Int16Builder, Int32Builder, Int64Builder, ListBuilder, StringBuilder,
-    BinaryBuilder
+    make_builder, ArrayBuilder, BinaryBuilder, BooleanBuilder, FixedSizeBinaryBuilder,
+    Float32Builder, Float64Builder, Int16Builder, Int32Builder, Int64Builder, ListBuilder,
+    StringBuilder,
 };
 
 pub fn get_arrow_builders(schema: &Schema, capacity: usize) -> Vec<Box<dyn ArrayBuilder>> {
@@ -21,9 +21,7 @@ pub fn get_arrow_builders(schema: &Schema, capacity: usize) -> Vec<Box<dyn Array
             NativeType::VecString => {
                 builders.push(Box::new(ListBuilder::new(StringBuilder::new())))
             }
-            NativeType::VecByte => {
-                builders.push(Box::new(ListBuilder::new(BinaryBuilder::new())))
-            }
+            NativeType::VecByte => builders.push(Box::new(ListBuilder::new(BinaryBuilder::new()))),
             NativeType::VecUUID => {
                 builders.push(Box::new(ListBuilder::new(FixedSizeBinaryBuilder::new(16))))
             }

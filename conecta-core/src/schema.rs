@@ -6,6 +6,7 @@ pub enum NativeType {
     // Primitive types
     Bool,
     Char,
+    Bytes,
 
     // Signed
     I8,
@@ -80,6 +81,7 @@ impl NativeType {
 
             // Text
             NativeType::String => DataType::Utf8,
+            NativeType::Bytes => DataType::Binary,
             NativeType::UUID => DataType::FixedSizeBinary(16),
 
             // Time

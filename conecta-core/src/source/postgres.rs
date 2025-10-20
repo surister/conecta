@@ -395,6 +395,7 @@ impl Source for PostgresSource {
                             v.and_utc().timestamp_micros()
                         },
                             NativeType::String => StringBuilder, String, | v | v,
+                            NativeType::Bytes => BinaryBuilder, &[u8], | v | v,
                             NativeType::UUID => FixedSizeBinaryBuilder, Uuid, | v | v,
 
                             // Vectors
@@ -580,6 +581,7 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::FLOAT4 => NativeType::F32,
         Type::FLOAT8 => NativeType::F64,
 
+        Type::BYTEA => NativeType::Bytes,
         Type::CHAR | Type::BPCHAR | Type::TEXT => NativeType::String,
         Type::VARCHAR => NativeType::String,
         Type::BOOL => NativeType::Bool,

@@ -29,21 +29,21 @@ In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
 
 ### Primitive datatypes
 
-| Postgres type | Supported        | Native type              | Arrow                           | Notes |
-|---------------|------------------|--------------------------|---------------------------------|-------|
-| `BOOL`        | :material-check: | `bool`                   | `DataType::Boolean`             |       |
-| `INT2`        | :material-check: | `16`                     | `DataType::Int16`               |       |
-| `INT4`        | :material-check: | `i32`                    | `DataType::Int32`               |       |
-| `INT8`        | :material-check: | `i64`                    | `DataType::Int64`               |       |
-| `FLOAT4`      | :material-check: | `f32`                    | `DataType::Float32`             |       |
-| `FLOAT8`      | :material-check: | `f64`                    | `DataType::Float64`             |       |
-| `CHAR`        | :material-check: | `String`                 | `DataType::Utf8`                |       |
-| `BPCHAR`      | :material-check: | `String`                 | `DataType::Utf8`                |       |
-| `TEXT`        | :material-check: | `String`                 | `DataType::Utf8`                |       |
-| `VARCHAR`     | :material-check: | `String`                 | `DataType::Utf8`                |       |
-| `UUID`        | :material-check: | `uuid::Uuid`             | `DataType::FixedSizeBinary(16)` |       |
-| `BYTEA`       | :material-close: | `Vec<u8>`                | `DataType::Binary`              |       |
-| `NUMERIC`     | :material-close: | `bigdecimal::BigDecimal` | `DataType::Decimal128`          |       |
+| Postgres type | Supported        | Native type              | Arrow                           | Notes                      |
+|---------------|------------------|--------------------------|---------------------------------|----------------------------|
+| `BOOL`        | :material-check: | `bool`                   | `DataType::Boolean`             |                            |
+| `INT2`        | :material-check: | `16`                     | `DataType::Int16`               |                            |
+| `INT4`        | :material-check: | `i32`                    | `DataType::Int32`               |                            |
+| `INT8`        | :material-check: | `i64`                    | `DataType::Int64`               |                            |
+| `FLOAT4`      | :material-check: | `f32`                    | `DataType::Float32`             |                            |
+| `FLOAT8`      | :material-check: | `f64`                    | `DataType::Float64`             |                            |
+| `CHAR`        | :material-check: | `String`                 | `DataType::Utf8`                |                            |
+| `BPCHAR`      | :material-check: | `String`                 | `DataType::Utf8`                |                            |
+| `TEXT`        | :material-check: | `String`                 | `DataType::Utf8`                |                            |
+| `VARCHAR`     | :material-check: | `String`                 | `DataType::Utf8`                |                            |
+| `UUID`        | :material-check: | `uuid::Uuid`             | `DataType::FixedSizeBinary(16)` |                            |
+| `BYTEA`       | :material-check: | `&[u8]`                  | `DataType::Binary`              | max size is i32::MAX bytes |
+| `NUMERIC`     | :material-close: | `bigdecimal::BigDecimal` | `DataType::Decimal128`          |                            |
 
 ### Time datatypes
 

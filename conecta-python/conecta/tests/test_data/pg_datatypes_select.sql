@@ -9,7 +9,7 @@ select id,
        text_,
        bool_,
        uuid_,
-
+       bytea_,
        date_,
        time_,
        --timetz_,
@@ -26,12 +26,12 @@ select id,
        uuid_array,
        bool_array,
 
-        --geo
-        point_,
-        circle_,
-        line_,
-        box_,
-        lseg_,
-        path_,
-        polygon_
+       --geo
+       point_,
+       circle_,
+       line_,
+       box_,
+       lseg_,
+       path_,
+       polygon_
 from pg_datatypes

@@ -72,21 +72,21 @@ not PostGis'.
 
 ### Array datatypes
 
-| Postgres type        | Supported        | Native type          | Arrow                 | Notes |
-|----------------------|------------------|----------------------|-----------------------|-------|
-| `INT2_ARRAY`         | :material-check: | `Vec<i16>`           | `DataType::List<i16>` |       |
-| `INT4_ARRAY`         | :material-check: | `Vec<i32>`           | `DataType::List<i32>` |       |
-| `INT8_ARRAY`         | :material-check: | `Vec<i64>`           | `DataType::List<i64>` |       |
-| `FLOAT4_ARRAY`       | :material-check: | `Vec<f32>`           | `DataType::List<f32>` |       |
-| `FLOAT8_ARRAY`       | :material-check: | `Vec<f64>`           | `DataType::List<f64>` |       |
-| `Array[TEXT]`        | :material-close: | `Vec<String>`        | `DataType::List`      |       |
-| `Array_UUID`         | :material-check: | `Vec<uuid::Uuid>`    | `DataType::List`      |       |
-| `Array[BOOL]`        | :material-check: | `Vec<bool>`          | `DataType::List`      |       |
-| `Array[DATE]`        | :material-close: | `Vec<NaiveDate>`     | `DataType::List`      |       |
-| `Array[TIMESTAMP]`   | :material-close: | `Vec<NaiveDateTime>` | `DataType::List`      |       |
-| `Array[TIMESTAMPTZ]` | :material-close: | `Vec<DateTime<Utc>`  | `DataType::List`      |       |
-| `Array[NUMERIC]`     | :material-close: | `Vec<BigDecimal>`    | `DataType::List`      |       |
-| `Array[BYTEA]`       | :material-close: | `Vec<Vec<u8>>`       | `DataType::List`      |       |
+| Postgres type        | Supported        | Native type          | Arrow                    | Notes |
+|----------------------|------------------|----------------------|--------------------------|-------|
+| `INT2_ARRAY`         | :material-check: | `Vec<i16>`           | `DataType::List<i16>`    |       |
+| `INT4_ARRAY`         | :material-check: | `Vec<i32>`           | `DataType::List<i32>`    |       |
+| `INT8_ARRAY`         | :material-check: | `Vec<i64>`           | `DataType::List<i64>`    |       |
+| `FLOAT4_ARRAY`       | :material-check: | `Vec<f32>`           | `DataType::List<f32>`    |       |
+| `FLOAT8_ARRAY`       | :material-check: | `Vec<f64>`           | `DataType::List<f64>`    |       |
+| `TEXT_ARRAY`         | :material-check: | `Vec<String>`        | `DataType::List`         |       |
+| `UUID_ARRAY`         | :material-check: | `Vec<uuid::Uuid>`    | `DataType::List`         |       |
+| `BOOL_ARRAY`         | :material-check: | `Vec<bool>`          | `DataType::List`         |       |
+| `Array[DATE]`        | :material-close: | `Vec<NaiveDate>`     | `DataType::List`         |       |
+| `Array[TIMESTAMP]`   | :material-close: | `Vec<NaiveDateTime>` | `DataType::List`         |       |
+| `Array[TIMESTAMPTZ]` | :material-close: | `Vec<DateTime<Utc>`  | `DataType::List`         |       |
+| `Array[NUMERIC]`     | :material-close: | `Vec<BigDecimal>`    | `DataType::List`         |       |
+| `BYTEA_ARRAY`        | :material-check: | `Vec<Option<&[u8]>>` | `DataType::List<Binary>` |       |
 
 ## Example
 

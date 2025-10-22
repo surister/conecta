@@ -164,6 +164,7 @@ class PartitionPlan:
         partition_config = d.pop('partition_config')
         return cls(**d, partition_config=PartitionConfig(**partition_config))
 
+
 def create_partition_plan(
         conn: str,
         query: list[str] | str,
@@ -177,7 +178,7 @@ def create_partition_plan(
 
     pool_size = config.get('max_pool_size')
     preallocation = config.get('preallocation')
-    plan = json.loads( 
+    plan = json.loads(
         _create_partition_plan(
             conn,
             query,
@@ -243,14 +244,12 @@ def read_sql(
                 raise ImportError(
                     f'Return backend {p!r} needs the package \'nanoarrow\','
                     f' you can fix this with `pip install nanoarrow`') from e
-        case _:
-            raise ValueError(f'The specified return_backend {return_backend!r} is not supported.')
-
-    return _read_sql(conn,
-                     query=query,
-                     partition_on=partition_on,
-                     partition_range=partition_range,
-                     partition_num=partition_num,
-                     return_backend=return_backend,
-                     **extra_conf
-                     )
+    return _read_sql(
+        conn,
+        query=query,
+        partition_on=partition_on,
+        partition_range=partition_range,
+        partition_num=partition_num,
+        return_backend=return_backend,
+        **extra_conf
+    )

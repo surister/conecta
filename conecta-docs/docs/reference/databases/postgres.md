@@ -56,9 +56,7 @@ In the case of sqlalchemy, the part on the right e.g. `psycopg2` is ignored.
 
 ### Geo-spatial datatypes
 
-These geospatial types are the
-native [ones](https://www.postgresql.org/docs/current/datatype-geometric.html)
-not PostGis'.
+Native GEOSPATIAL types
 
 | Postgres type | Supported        | Native type                  | Arrow            | Notes                                                                                                                                                                           |
 |---------------|------------------|------------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -69,6 +67,76 @@ not PostGis'.
 | `LSEG`        | :material-check: | `conecta::postgres::Lseg`    | ``list<double>`` | List with four elements, (x1, y1, x2, y2) where (x1,y1) and (x2,y2) are the end points of the line segment.                                                                     |
 | `PATH`        | :material-check: | `conecta::postgres::Path`    | ``list<double>`` | List with minimum of two elements, (o, c, x1, y1, x2, y2...) where `o` is whether the path is open or not, `c` is the total count of points and the rest are points components. |
 | `POLYGON`     | :material-check: | `conecta::postgres::Polygon` | ``list<double>`` | List with points, (x1, y1, x2, y2... xn, yn)                                                                                                                                    |
+
+PostGis
+
+| Postgres type | Supported        | Native type                        | Arrow      | Notes                                                         |
+|---------------|------------------|------------------------------------|------------|---------------------------------------------------------------|
+| `Geometry`    | :material-check: | `conecta::postgres::PostgisBinary` | ``binary`` | If `ST_AsEWKT` or `ST_AsText` is used, text will be returned. |
+
+```python
+from conecta import read_sql
+table = read_sql(
+    "postgres://postgres:postgres@localhost:32789/test" ,
+    query="""
+    SELECT 
+        ST_GeomFromText( 'POLYGON((0 0,0 1,1 1,1 0,0 0))', 4326 ) as geo1,
+        ST_AsEWKB( ST_GeomFromText('POLYGON((0 0,0 1,1 1,1 0,0 0))', 4326) ) as geo2,
+        ST_AsBinary( ST_GeomFromText('POLYGON((0 0,0 1,1 1,1 0,0 0))', 4326) ) as geo3,
+        ST_AsText( ST_GeomFromText( 'POLYGON((0 0,0 1,1 1,1 0,0 0))', 4326 ) ) as geo4
+    """,
+)
+
+print(table)
+# pyarrow.Table
+# geo1: binary
+# geo2: binary
+# geo3: binary
+# st_astext: string
+# ----
+# geo1: [[0103000020E61000000100000005000000000000000000000000000000000000000000000000000000000000000000F03F00 (... 94 chars omitted)]]
+# geo2: [[0103000020E61000000100000005000000000000000000000000000000000000000000000000000000000000000000F03F00 (... 94 chars omitted)]]
+# geo3: [[01030000000100000005000000000000000000000000000000000000000000000000000000000000000000F03F0000000000 (... 86 chars omitted)]]
+# geo4: [["POLYGON((0 0,0 1,1 1,1 0,0 0))"]]
+
+# pip install geoarrow-pyarrow
+from geoarrow.pyarrow import as_geoarrow, as_wkt, to_geopandas
+
+for column in table:
+    print(as_wkt(as_geoarrow(column)))
+# [
+#   [
+#     "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))"
+#   ]
+# ]
+# [
+#   [
+#     "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))"
+#   ]
+# ]
+# [
+#   [
+#     "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))"
+#   ]
+# ]
+# [
+#   [
+#     "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))"
+#   ]
+# ]
+
+for column in table:
+    print(to_geopandas(as_geoarrow(column)))
+
+# 0    POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))
+# dtype: geometry
+# 0    POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))
+# dtype: geometry
+# 0    POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))
+# dtype: geometry
+# 0    POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))
+# dtype: geometry
+```
 
 ### Array datatypes
 

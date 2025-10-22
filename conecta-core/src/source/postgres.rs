@@ -6,6 +6,7 @@ use crate::source::source::Source;
 use arrow::array::*;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use log::debug;
+use std::error::Error;
 
 use postgres::fallible_iterator::FallibleIterator;
 use postgres::types::{FromSql, Type};
@@ -238,6 +239,21 @@ impl Path {
     }
 }
 
+/// Postgres datatype that just returns the binary we get.
+struct PostgresBinary {
+    data: Vec<u8>,
+}
+
+impl<'a> FromSql<'a> for PostgresBinary {
+    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
+        Ok(PostgresBinary { data: raw.to_vec() })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty.name() == "geometry"
+    }
+}
+
 /// Represents a Polygon represented by a list of coordinates, [x1, y1, x2, y2...xn, yn]
 #[derive(Debug)]
 struct Polygon {
@@ -418,6 +434,7 @@ impl Source for PostgresSource {
                             NativeType::LineSegment => ListBuilder<Float64Builder>, LineSegment, |v: LineSegment|v.to_vec_opt().into_iter(),
                             NativeType::Path => ListBuilder<Float64Builder>, Path, |v: Path|v.to_vec_opt().into_iter(),
                             NativeType::Polygon => ListBuilder<Float64Builder>, Polygon, |v: Polygon|v.to_vec_opt().into_iter(),
+                            NativeType::PgGis => BinaryBuilder, PostgresBinary, |v: PostgresBinary|v.data,
                         });
 
                         // VecUUID is not above because it follows a different API due to FixedSizeBinaryBuilder.
@@ -425,7 +442,7 @@ impl Source for PostgresSource {
                             NativeType::VecUUID => {
                                 let downcasted_builder = builder
                                     .as_any_mut()
-                                    .downcast_mut::<ListBuilder<FixedSizeBinaryBuilder>>().expect("??");
+                                    .downcast_mut::<ListBuilder<FixedSizeBinaryBuilder>>().unwrap();
                                 let unwrapped_value = unwrap.try_get::<usize, Vec<Uuid>>(col_id);
                                 match unwrapped_value {
                                     Ok(v) => {
@@ -616,6 +633,14 @@ fn to_native_ty(ty: Type) -> NativeType {
         Type::LSEG => NativeType::LineSegment,
         Type::PATH => NativeType::Path,
         Type::POLYGON => NativeType::Polygon,
-        _ => panic!("type {ty} is not implemented for Postgres"),
+
+        _ => {
+            // Couldn't match by default OID, it might be a datatype from an extension
+            // like POSTGIS, we need to match by name.
+            match ty.name() {
+                "geometry" => NativeType::PgGis,
+                _ => panic!("type {ty} is not implemented for Postgres"),
+            }
+        }
     }
 }

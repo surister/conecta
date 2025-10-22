@@ -48,6 +48,7 @@ pub fn get_arrow_builders(schema: &Schema, capacity: usize) -> Vec<Box<dyn Array
             ))),
             NativeType::Path => builders.push(Box::new(ListBuilder::new(Float64Builder::new()))),
             NativeType::Polygon => builders.push(Box::new(ListBuilder::new(Float64Builder::new()))),
+            NativeType::PgGis => builders.push(Box::new(BinaryBuilder::new())),
             _ => builders.push(make_builder(&column.data_type.to_arrow(), capacity)),
         }
     }

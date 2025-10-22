@@ -61,6 +61,8 @@ pub enum NativeType {
     LineSegment,
     Path,
     Polygon,
+
+    PgGis,
 }
 
 impl NativeType {
@@ -131,6 +133,7 @@ impl NativeType {
             NativeType::VecBool => {
                 DataType::List(Arc::new(Field::new("_", DataType::Boolean, true)))
             }
+            NativeType::PgGis => DataType::Binary,
             _ => {
                 panic!("Native type:: <{:?}> to arrow is not implemented", self)
             }
@@ -143,7 +146,6 @@ pub struct Schema {
     pub columns: Vec<Column>,
 }
 
-// let field_a = Field::new("a", DataType::Int64, false);
 impl Schema {
     pub fn to_arrow(self) -> ArrowSchema {
         ArrowSchema::new(

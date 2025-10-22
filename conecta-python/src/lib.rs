@@ -92,7 +92,6 @@ pub fn read_sql(
             rb.get_array_memory_size()
         );
     }
-
     let table = PyTable::try_new(rbs, Arc::new(schema.to_arrow()));
 
     match return_backend.as_str() {

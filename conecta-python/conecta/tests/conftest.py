@@ -61,7 +61,7 @@ def pg_conn() -> Generator[str, Any, None]:
     PG_DATATAYPES_DDL = open(test_dir / 'pg_datatypes_ddl.sql').read()
     PG_DATATAYPES_DATA = open(test_dir / 'pg_datatypes_data.sql').read()
 
-    with PostgresContainer("postgres:18", driver=None) as postgres:
+    with PostgresContainer("postgres:18") as postgres:
         engine = sqlalchemy.create_engine(postgres.get_connection_url())
         conn = engine.connect()
 

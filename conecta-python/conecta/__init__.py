@@ -244,6 +244,10 @@ def read_sql(
                 raise ImportError(
                     f'Return backend {p!r} needs the package \'nanoarrow\','
                     f' you can fix this with `pip install nanoarrow`') from e
+        case _:
+            # This is reachable.
+            raise ValueError(f'Backend {return_backend!r} is not supported.')
+
     return _read_sql(
         conn,
         query=query,

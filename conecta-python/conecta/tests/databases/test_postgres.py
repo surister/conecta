@@ -29,4 +29,3 @@ def test_postgis_types(postgres_postgis_conn, postgres_postgis_types_query):
             'geom_collection_text': 'GEOMETRYCOLLECTION(POINT(2 0),POLYGON((0 0,1 0,1 1,0 1,0 0)))'
         }
     ]
-    time.sleep(10000)

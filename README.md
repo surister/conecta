@@ -74,6 +74,30 @@ Supported sources:
 ## How to install.
 You can get started by running `pip install conecta`
 
+## Performance
++-----------------------------+------------------------+---------------+--------------------+----------------+
+| name                        | captured_elapsed       | peak_memory   |   function_time(s) |   test_time(s) |
++=============================+========================+===============+====================+================+
+| conecta-4-lineitem_small    | 38.488903ms            | 2.520751MB    |           0.119171 |       0.284783 |
++-----------------------------+------------------------+---------------+--------------------+----------------+
+| conecta-4-lineitem          | 1.75472146s            | 214.47775MB   |           1.79604  |       1.86721  |
++-----------------------------+------------------------+---------------+--------------------+----------------+
+| connectorx-4-lineitem_small |                        |               |           0.494878 |       0.717556 |
++-----------------------------+------------------------+---------------+--------------------+----------------+
+| connectorx-4-lineitem       |                        |               |           2.15225  |       2.27106  |
++-----------------------------+------------------------+---------------+--------------------+----------------+
+
+Protocol is cursor.
+
+The most relevant metrics to compare are `function_time` and `peak_memory`
+
+**captured_elapsed**: The total time the data download took.
+**peak_memory**: The total amount of memory when the data was downloaded.
+**function_time**: The time the function `read_sql` took, taking into account data download,
+**record** batch creation and python overhead.
+**test_time**: The total amount of time the benchmark case took, taking into account `uv` and dependency
+setup.
+
 ## Supported architectures
 
 Conecta is compiled in almost all popular architectures.

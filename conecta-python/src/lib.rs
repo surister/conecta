@@ -93,12 +93,11 @@ pub fn read_sql(
         );
     }
     let table = PyTable::try_new(rbs, Arc::new(schema.to_arrow()));
-
     match return_backend.as_str() {
         "arro3" => Ok(table?.to_arro3(py)?.into()),
         "nanoarrow" => Ok(table?.to_nanoarrow(py)?.into()),
         // We default to pyarrow, its also default on conecta-python
-        _ => Ok(table?.to_pyarrow(py)?.into()),
+        _ => Ok(table?.into_pyarrow(py)?.into()),
     }
 }
 

@@ -9,7 +9,7 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/conecta)
 ![PyPI - Status](https://img.shields.io/pypi/status/conecta)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsurister%2Fconecta%2Frefs%2Fheads%2Fmaster%2Fconecta-python%2Fpyproject.toml)
-![Static Badge](https://img.shields.io/badge/arrow%3D56.2-latest-bright?logo=apache)
+![Static Badge](https://img.shields.io/badge/arrow%3D57.0-latest-bright?logo=apache)
 
 [![docs](https://github.com/surister/conecta/actions/workflows/docs.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/docs.yml)
 [![Full build all targets](https://github.com/surister/conecta/actions/workflows/build_python.yml/badge.svg)](https://github.com/surister/conecta/actions/workflows/build_python.yml)
@@ -75,28 +75,22 @@ Supported sources:
 You can get started by running `pip install conecta`
 
 ## Performance
-+-----------------------------+------------------------+---------------+--------------------+----------------+
-| name                        | captured_elapsed       | peak_memory   |   function_time(s) |   test_time(s) |
-+=============================+========================+===============+====================+================+
-| conecta-4-lineitem_small    | 38.488903ms            | 2.520751MB    |           0.119171 |       0.284783 |
-+-----------------------------+------------------------+---------------+--------------------+----------------+
-| conecta-4-lineitem          | 1.75472146s            | 214.47775MB   |           1.79604  |       1.86721  |
-+-----------------------------+------------------------+---------------+--------------------+----------------+
-| connectorx-4-lineitem_small |                        |               |           0.494878 |       0.717556 |
-+-----------------------------+------------------------+---------------+--------------------+----------------+
-| connectorx-4-lineitem       |                        |               |           2.15225  |       2.27106  |
-+-----------------------------+------------------------+---------------+--------------------+----------------+
 
-Protocol is cursor.
+| name                        | captured_elapsed | peak_memory | function_time(s) | test_time(s) |
+|-----------------------------|------------------|-------------|------------------|--------------|
+| conecta-4-lineitem_small    | 38.488903ms      | 2.520751MB  | 0.119171         | 0.284783     |
+| conecta-4-lineitem          | 1.75472146s      | 214.47775MB | 1.79604          | 1.86721      |
+| connectorx-4-lineitem_small |                  |             | 0.494878         | 0.717556     |
+| connectorx-4-lineitem       |                  |             | 2.15225          | 2.27106      |
+
+Protocol is 'cursor'.
 
 The most relevant metrics to compare are `function_time` and `peak_memory`
 
-**captured_elapsed**: The total time the data download took.
-**peak_memory**: The total amount of memory when the data was downloaded.
-**function_time**: The time the function `read_sql` took, taking into account data download,
-**record** batch creation and python overhead.
-**test_time**: The total amount of time the benchmark case took, taking into account `uv` and dependency
-setup.
+* **captured_elapsed**: The total time the data download and arrays creation.
+* **peak_memory**: The total amount of memory when the data was downloaded.
+* **function_time**: The time the function `read_sql`.
+* **test_time**: The total amount of time the benchmark case took, taking into test setup.
 
 ## Supported architectures
 

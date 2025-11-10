@@ -19,4 +19,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 uuid = "1.18.1"
 geo-types = "0.7.17"
 [dev-dependencies]
-flamegraph = "0.6.9"
+flamegraph = "0.6.10"

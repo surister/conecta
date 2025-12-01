@@ -27,7 +27,7 @@ jobs:
         toolchain:
           - stable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup rust
         working-directory: conecta-python
         run: |
@@ -41,7 +41,7 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Copy README.md to conecta-python for maturin
         run: |

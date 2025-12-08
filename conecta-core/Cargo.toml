@@ -16,7 +16,7 @@ rayon = "1.11.0"
 chrono = "0.4.42"
 
 serde = { version = "1.0.228", features = ["derive"] }
-uuid = "1.18.1"
+uuid = "1.19.0"
 geo-types = "0.7.17"
 [dev-dependencies]
 flamegraph = "0.6.10"
